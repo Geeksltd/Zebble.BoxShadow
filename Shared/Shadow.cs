@@ -84,6 +84,7 @@
                     imageBuffer[offset + 3] = 0xFF;  // Alpha
                 }
             }
+
             var result = Save(savePath, imageBuffer);
             return Task.CompletedTask;
         }
