@@ -73,7 +73,6 @@
             // TODO: Generate an image for the blur using semi transparent pixels:
             var imageBuffer = new byte[Convert.ToInt32(4 * Width.CurrentValue * Height.CurrentValue)];
 
-
             for (int row = 0; row < Owner.Height.CurrentValue; row++)
             {
                 for (int col = 0; col < Owner.Width.CurrentValue; col++)
@@ -85,14 +84,9 @@
                     imageBuffer[offset + 3] = 0xFF;  // Alpha
                 }
             }
-
             var result = Save(savePath, imageBuffer);
-
             return Task.CompletedTask;
         }
-
-
-
 
         //const int CHANNELS = 4;
 
