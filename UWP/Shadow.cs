@@ -18,6 +18,17 @@ namespace Zebble
 {
     public partial class Shadow
     {
+        public static Task SaveAsPng(FileInfo target, int imageWidth, int imageHeight, Color[] pixels)
+        {
+            if (pixels.Length != imageWidth * imageHeight)
+                throw new Exception($"For a {imageWidth}X{imageHeight} image, an array of {imageWidth * imageHeight}" +
+                    " colors is expected.");
+
+            // TODO: Create a bitmap image with the specified width and height.
+            // Then set each pixel from the array provided.
+            // Then encode and save the bitmap as a PNG file.
+        }
+
         bool Save(FileInfo savePath, byte[] buffer)
         {
             Device.UIThread.Run(async () =>
