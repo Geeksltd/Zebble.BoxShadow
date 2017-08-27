@@ -1,18 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Windows.Graphics.Imaging;
-using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
-using Windows.UI.Xaml.Shapes;
-using Windows.Graphics.DirectX.Direct3D11;
 using Windows.Storage.Streams;
 using Windows.Storage;
 using System.Runtime.InteropServices.WindowsRuntime;
+
 
 namespace Zebble
 {
@@ -21,13 +15,48 @@ namespace Zebble
         public static Task SaveAsPng(FileInfo target, int imageWidth, int imageHeight, Color[] pixels)
         {
             if (pixels.Length != imageWidth * imageHeight)
-                throw new Exception($"For a {imageWidth}X{imageHeight} image, an array of {imageWidth * imageHeight}" +
-                    " colors is expected.");
+                throw new Exception($"For a {imageWidth}X{imageHeight} image, an array of {imageWidth * imageHeight}" + " colors is expected.");
+            Device.UIThread.Run(async () =>
+            {
+                // TODO: Create a bitmap image with the specified width and height.
+                WriteableBitmap bitmap = new WriteableBitmap(imageWidth, imageHeight);
 
-            // TODO: Create a bitmap image with the specified width and height.
-            // Then set each pixel from the array provided.
-            // Then encode and save the bitmap as a PNG file.
+                // Then set each pixel from the array provided.
+                // WriteableBitmap uses BGRA format which is 4 bytes per pixel.
+                byte[] imageArray = new byte[imageHeight * imageWidth * 4];
+                for (int i = 0; i < imageArray.Length; i += 4)
+                {
+                    var color = pixels[i].Render();
+                    imageArray[i] = color.B; // Blue
+                    imageArray[i + 1] = color.G;  // Green
+                    imageArray[i + 2] = color.R; // Red
+                    imageArray[i + 3] = color.A;  // Alpha
+                }
+                // Open a stream to copy the image contents to the WriteableBitmap's pixel buffer 
+                using (Stream stream = bitmap.PixelBuffer.AsStream())
+                {
+                    stream.WriteAsync(imageArray, 0, imageArray.Length);
+                }
+                // Then encode and save the bitmap as a PNG file.'
+
+                target.Create().Dispose();
+                StorageFile destFile = await target.ToStorageFile();
+                using (IRandomAccessStream stream = await destFile.OpenAsync(FileAccessMode.ReadWrite))     //   using (IRandomAccessStream stream = target.Create().AsRandomAccessStream())
+                {
+                    BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
+                    Stream pixelStream = bitmap.PixelBuffer.AsStream();
+                    byte[] pixelsArray = new byte[pixelStream.Length];
+                    await pixelStream.ReadAsync(pixelsArray, 0, pixels.Length);
+
+                    encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore,
+                                (uint)bitmap.PixelWidth, (uint)bitmap.PixelHeight, 96.0, 96.0, pixelsArray);
+                    await encoder.FlushAsync();
+                }
+            });
+            return Task.CompletedTask;
         }
+
+
 
         bool Save(FileInfo savePath, byte[] buffer)
         {
@@ -58,6 +87,50 @@ namespace Zebble
             });
             return true;
         }
+
+        //public async Task<byte[]> ResizeImage(byte[] imageData, int reqWidth, int reqHeight, int quality)
+        //{
+
+        //    var memStream = new MemoryStream(imageData);
+
+        //    IRandomAccessStream imageStream = memStream.AsRandomAccessStream();
+        //    var decoder = await BitmapDecoder.CreateAsync(imageStream);
+        //    if (decoder.PixelHeight > reqHeight || decoder.PixelWidth > reqWidth)
+        //    {
+        //        using (imageStream)
+        //        {
+        //            var resizedStream = new InMemoryRandomAccessStream();
+
+        //            BitmapEncoder encoder = await BitmapEncoder.CreateForTranscodingAsync(resizedStream, decoder);
+        //            double widthRatio = (double)reqWidth / decoder.PixelWidth;
+        //            double heightRatio = (double)reqHeight / decoder.PixelHeight;
+
+        //            double scaleRatio = Math.Min(widthRatio, heightRatio);
+
+        //            if (reqWidth == 0)
+        //                scaleRatio = heightRatio;
+
+        //            if (reqHeight == 0)
+        //                scaleRatio = widthRatio;
+
+        //            uint aspectHeight = (uint)Math.Floor(decoder.PixelHeight * scaleRatio);
+        //            uint aspectWidth = (uint)Math.Floor(decoder.PixelWidth * scaleRatio);
+
+        //            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Linear;
+
+        //            encoder.BitmapTransform.ScaledHeight = aspectHeight;
+        //            encoder.BitmapTransform.ScaledWidth = aspectWidth;
+
+        //            await encoder.FlushAsync();
+        //            resizedStream.Seek(0);
+        //            var outBuffer = new byte[resizedStream.Size];
+        //            await resizedStream.ReadAsync(outBuffer.AsBuffer(), (uint)resizedStream.Size, InputStreamOptions.None);
+        //            return outBuffer;
+        //        }
+        //    }
+        //    return imageData;
+        //}
+
 
         //async Task Save(byte[] ImageArray)
         //{
