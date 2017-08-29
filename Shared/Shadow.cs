@@ -76,7 +76,7 @@
             var length = height * width;
             Color[] colors = new Color[length];
 
-            var result = SaveAsPng(savePath, width, height, colors);
+            var result = SaveAsPng(savePath, width, height, BlurRadius, colors);
             return Task.CompletedTask;
         }
     }

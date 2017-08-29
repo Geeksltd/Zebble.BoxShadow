@@ -12,7 +12,7 @@ namespace Zebble
 {
     public partial class Shadow
     {
-        public static Task SaveAsPng(FileInfo target, int imageWidth, int imageHeight, Color[] pixels)
+        public static Task SaveAsPng(FileInfo target, int imageWidth, int imageHeight, int blurRadius, Color[] pixels)
         {
             if (pixels.Length != imageWidth * imageHeight)
                 throw new Exception($"For a {imageWidth}X{imageHeight} image, an array of {imageWidth * imageHeight}" + " colors is expected.");
@@ -23,19 +23,30 @@ namespace Zebble
 
                 // Then set each pixel from the array provided.
                 // WriteableBitmap uses BGRA format which is 4 bytes per pixel.
-                byte[] imageArray = new byte[imageHeight * imageWidth * 4];
+
+                const int bitsPerPixel = 4;
+                var imageArray = new byte[imageWidth * imageHeight * bitsPerPixel];
+
                 for (int i = 0; i < imageArray.Length; i += 4)
                 {
-                    var color = pixels[i].Render();
+                    var pixelNumber = i / bitsPerPixel;
+                    var color = pixels[pixelNumber].Render();
+
                     imageArray[i] = color.B; // Blue
                     imageArray[i + 1] = color.G;  // Green
                     imageArray[i + 2] = color.R; // Red
-                    imageArray[i + 3] = color.A;  // Alpha
+                    imageArray[i + 3] = color.A;  // Alpha                
                 }
+
+                // Blur it
+                //if (blurRadius != 0)                
+                //    imageArray = GaussianBlur.Blur(imageArray, width, height, bitsPerPixel, blurRadius);
+
+
                 // Open a stream to copy the image contents to the WriteableBitmap's pixel buffer 
                 using (Stream stream = bitmap.PixelBuffer.AsStream())
                 {
-                    stream.WriteAsync(imageArray, 0, imageArray.Length);
+                    await stream.WriteAsync(imageArray, 0, imageArray.Length);
                 }
                 // Then encode and save the bitmap as a PNG file.
 
@@ -48,7 +59,7 @@ namespace Zebble
                     byte[] pixelsArray = new byte[pixelStream.Length];
                     await pixelStream.ReadAsync(pixelsArray, 0, pixels.Length);
 
-                    encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore,
+                    encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Straight,
                                 (uint)bitmap.PixelWidth, (uint)bitmap.PixelHeight, 96.0, 96.0, pixelsArray);
                     await encoder.FlushAsync();
                 }
