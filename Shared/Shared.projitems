@@ -16,6 +16,7 @@
     <None Include="$(MSBuildThisFileDirectory)NuGet\Icon.png" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)GaussianBlur.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Shadow.cs" />
   </ItemGroup>
 </Project>

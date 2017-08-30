@@ -75,6 +75,64 @@
             var width = (int)Owner.Width.CurrentValue;
             var length = height * width;
             Color[] colors = new Color[length];
+            Color backgroundColor = Colors.Black;
+
+
+            int rMax = backgroundColor.Red;
+            int rMin = Color.Red;
+
+            int gMax = backgroundColor.Green;
+            int gMin = Color.Green;
+
+            int bMax = backgroundColor.Blue;
+            int bMin = Color.Blue;
+
+            int yRadian = width / BlurRadius;
+            int xRadian = height / BlurRadius;
+
+            for (var y = 0; y < height; y++)
+                for (var x = 0; x < width; x++)
+                {
+                    int i = y * width + x;
+                    if ((y < BlurRadius)) // Top band
+                    {
+                        int density = (yRadian * BlurRadius) - (y * yRadian);
+                        byte rAverage = (byte)(rMin + ((rMax - rMin) * density / width));
+                        var gAverage = (byte)(gMin + (byte)((gMax - gMin) * density / width));
+                        var bAverage = (byte)(bMin + (byte)((bMax - bMin) * density / width));
+                        colors[i] = new Color(rAverage, gAverage, bAverage);
+                    }
+                    else if (y >= height - 1 - BlurRadius)  // Bottom band
+                    {
+                        int density = (y + 1 + yRadian - height) * yRadian;
+                        byte rAverage = (byte)(rMin + ((rMax - rMin) * density / width));
+                        var gAverage = (byte)(gMin + (byte)((gMax - gMin) * density / width));
+                        var bAverage = (byte)(bMin + (byte)((bMax - bMin) * density / width));
+                        colors[i] = new Color(rAverage, gAverage, bAverage);
+                    }
+                    else if (x % width < BlurRadius) // Left band
+                    {
+                        // colors[i] = new Color(backgroundColor.Red, backgroundColor.Green, backgroundColor.Blue, color.Alpha);
+                        int density = (xRadian * BlurRadius) - (x * yRadian);
+                        byte rAverage = (byte)(rMin + ((rMax - rMin) * density / height));
+                        var gAverage = (byte)(gMin + (byte)((gMax - gMin) * density / height));
+                        var bAverage = (byte)(bMin + (byte)((bMax - bMin) * density / height));
+                        colors[i] = new Color(rAverage, gAverage, bAverage);
+                    }
+                    else if (x % width >= width - BlurRadius) // right band
+                    {
+                        //  colors[i] = new Color(backgroundColor.Red, backgroundColor.Green, backgroundColor.Blue, color.Alpha);
+                        int density = (x + 1 + xRadian - width) * yRadian;
+                        byte rAverage = (byte)(rMin + ((rMax - rMin) * density / height));
+                        var gAverage = (byte)(gMin + (byte)((gMax - gMin) * density / height));
+                        var bAverage = (byte)(bMin + (byte)((bMax - bMin) * density / height));
+                        colors[i] = new Color(rAverage, gAverage, bAverage);
+                    }
+                    else //center
+                    {
+                        colors[i] = new Color(Color.Red, Color.Green, Color.Blue, Color.Alpha);
+                    }
+                }
 
             var result = SaveAsPng(savePath, width, height, BlurRadius, colors);
             return Task.CompletedTask;

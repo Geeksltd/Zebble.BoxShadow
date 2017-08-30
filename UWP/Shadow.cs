@@ -6,7 +6,7 @@ using Windows.UI.Xaml.Media.Imaging;
 using Windows.Storage.Streams;
 using Windows.Storage;
 using System.Runtime.InteropServices.WindowsRuntime;
-
+using Zebble.Plugin;
 
 namespace Zebble
 {
@@ -39,8 +39,8 @@ namespace Zebble
                 }
 
                 // Blur it
-                //if (blurRadius != 0)                
-                //    imageArray = GaussianBlur.Blur(imageArray, width, height, bitsPerPixel, blurRadius);
+                if (blurRadius != 0)
+                    imageArray = GaussianBlur.Blur(imageArray, imageWidth, imageHeight, bitsPerPixel, blurRadius);
 
 
                 // Open a stream to copy the image contents to the WriteableBitmap's pixel buffer 
@@ -57,7 +57,7 @@ namespace Zebble
                     BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
                     Stream pixelStream = bitmap.PixelBuffer.AsStream();
                     byte[] pixelsArray = new byte[pixelStream.Length];
-                    await pixelStream.ReadAsync(pixelsArray, 0, pixels.Length);
+                    await pixelStream.ReadAsync(pixelsArray, 0, pixelsArray.Length);
 
                     encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Straight,
                                 (uint)bitmap.PixelWidth, (uint)bitmap.PixelHeight, 96.0, 96.0, pixelsArray);
@@ -65,38 +65,6 @@ namespace Zebble
                 }
             });
             return Task.CompletedTask;
-        }
-
-
-
-        bool Save(FileInfo savePath, byte[] buffer)
-        {
-            Device.UIThread.Run(async () =>
-            {
-                WriteableBitmap wb = new WriteableBitmap(50, 50);
-                using (Stream stream = wb.PixelBuffer.AsStream())
-                {
-                    if (stream.CanWrite)
-                    {
-                        stream.WriteAsync(buffer, 0, buffer.Length);
-                        stream.Flush();
-                    }
-                }
-
-                StorageFile destFile = await KnownFolders.PicturesLibrary.CreateFileAsync(savePath.FullName, CreationCollisionOption.ReplaceExisting);
-                using (IRandomAccessStream stream = await destFile.OpenAsync(FileAccessMode.ReadWrite))
-                {
-                    BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
-                    Stream pixelStream = wb.PixelBuffer.AsStream();
-                    byte[] pixels = new byte[pixelStream.Length];
-                    await pixelStream.ReadAsync(pixels, 0, pixels.Length);
-
-                    encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore,
-                                (uint)wb.PixelWidth, (uint)wb.PixelHeight, 96.0, 96.0, pixels);
-                    await encoder.FlushAsync();
-                }
-            });
-            return true;
         }
     }
 }
