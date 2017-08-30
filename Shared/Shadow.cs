@@ -26,9 +26,17 @@
         public Color Color { get; set; } = Colors.Black;
         public int XOffset { get; set; } = 10;
         public int YOffset { get; set; } = 10;
-        public int SpreadRadius { get; set; } = 10;
+        public int SpreadRadius { get; set; } = 0; //{ get; set {  Owner.X.Set( value); Owner.Y.Set(value); } } = 0;
         public int BlurRadius { get; set; } = 10;
 
+        public void SetSpreadRadius(int value)
+        {
+            X.Set(X.CurrentValue + value / 2);
+            Y.Set(Y.CurrentValue + value / 2);
+            Height.Set(Owner.Height.CurrentValue + value);
+            Width.Set(Owner.Width.CurrentValue + value);
+            SpreadRadius = value;
+        }
         public override async Task OnPreRender()
         {
             await base.OnPreRender();
@@ -57,7 +65,6 @@
             Visible = Owner.Visible;
             Opacity = Owner.Opacity;
         }
-
         FileInfo GetImagePath()
         {
             var name = new object[] { Owner.Width, Owner.Height, Color, SpreadRadius, BlurRadius }
@@ -65,8 +72,6 @@
 
             return Device.IO.Cache.GetFile(name + ".png");
         }
-
-
 
         Task CreateImageFile(FileInfo savePath)
         {
