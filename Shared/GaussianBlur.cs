@@ -6,7 +6,7 @@ namespace Zebble.Plugin
 {
     internal static class GaussianBlur
     {
-        public static byte[] Blur(byte[] image, int width, int height, int bitsPerPixel, int radial)
+        public static byte[] Blur(byte[] image, int width, int height, int bitsPerPixel, int radial, int increaseValue)
         {
             var newRed = new byte[width * height];
             var newGreen = new byte[width * height];
@@ -45,16 +45,31 @@ namespace Zebble.Plugin
             boxBlur_R(blue, newBlue, width, height, (bxs[2] - 1) / 2);
             boxBlur_R(alpha, newAlpha, width, height, (bxs[3] - 1) / 2);
 
+
+            int cutValue = increaseValue / 2;
             for (var y = 0; y < height; y++)
                 for (var x = 0; x < width; x++)
                 {
+                    var isCenter = false;
                     int i = y * width + x;
                     var index = i * bitsPerPixel;
+                    if (y > cutValue && y < (height - cutValue))
+                        if (x > cutValue && x < (width - cutValue))
+                        {
+                            result[index] = Colors.Transparent.Red;
+                            result[index + 1] = Colors.Transparent.Green;
+                            result[index + 2] = Colors.Transparent.Blue;
+                            result[index + 3] = Colors.Transparent.Alpha;
+                            isCenter = true;
+                        }
 
-                    result[index] = newBlue[i];
-                    result[index + 1] = newGreen[i];
-                    result[index + 2] = newRed[i];
-                    result[index + 3] = alpha[i];// image[index + 3];// alpha; //Convert.ToByte(width / 2 - Math.Abs(width / 2 - x));// image[index + 3];                    
+                    if (!isCenter)
+                    {
+                        result[index] = newBlue[i];
+                        result[index + 1] = newGreen[i];
+                        result[index + 2] = newRed[i];
+                        result[index + 3] = alpha[i];// image[index + 3];// alpha; //Convert.ToByte(width / 2 - Math.Abs(width / 2 - x));// image[index + 3];
+                    }
                 }
             return result;
         }

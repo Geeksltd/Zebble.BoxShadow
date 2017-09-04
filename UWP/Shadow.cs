@@ -12,25 +12,22 @@ namespace Zebble
 {
     public partial class Shadow
     {
-        public static Task SaveAsPng(FileInfo target, int imageWidth, int imageHeight, int blurRadius, Color[] pixels)
+        public static Task SaveAsPng(FileInfo target, int width, int height, int blurRadius, Color[] colors, int increaseValue)
         {
-            if (pixels.Length != imageWidth * imageHeight)
-                throw new Exception($"For a {imageWidth}X{imageHeight} image, an array of {imageWidth * imageHeight}" + " colors is expected.");
+            //if (pixels.Length != imageWidth * imageHeight)
+            //    throw new Exception($"For a {imageWidth}X{imageHeight} image, an array of {imageWidth * imageHeight}" + " colors is expected.");
             Device.UIThread.Run(async () =>
             {
                 // TODO: Create a bitmap image with the specified width and height.
-                WriteableBitmap bitmap = new WriteableBitmap(imageWidth, imageHeight);
-
-                // Then set each pixel from the array provided.
-                // WriteableBitmap uses BGRA format which is 4 bytes per pixel.
+                WriteableBitmap bitmap = new WriteableBitmap(width, height);
 
                 const int bitsPerPixel = 4;
-                var imageArray = new byte[imageWidth * imageHeight * bitsPerPixel];
+                var imageArray = new byte[width * height * bitsPerPixel];
 
                 for (int i = 0; i < imageArray.Length; i += 4)
                 {
                     var pixelNumber = i / bitsPerPixel;
-                    var color = pixels[pixelNumber].Render();
+                    var color = colors[pixelNumber].Render();
 
                     imageArray[i] = color.B; // Blue
                     imageArray[i + 1] = color.G;  // Green
@@ -40,8 +37,7 @@ namespace Zebble
 
                 // Blur it
                 if (blurRadius != 0)
-                    imageArray = GaussianBlur.Blur(imageArray, imageWidth, imageHeight, bitsPerPixel, blurRadius);
-
+                    imageArray = GaussianBlur.Blur(imageArray, width, height, bitsPerPixel, blurRadius, increaseValue);
                 // Open a stream to copy the image contents to the WriteableBitmap's pixel buffer 
                 using (Stream stream = bitmap.PixelBuffer.AsStream())
                 {
