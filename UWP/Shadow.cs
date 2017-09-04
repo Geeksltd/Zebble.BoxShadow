@@ -26,7 +26,7 @@ namespace Zebble
 
                 const int bitsPerPixel = 4;
                 var imageArray = new byte[imageWidth * imageHeight * bitsPerPixel];
-                var resultArray = new byte[imageWidth * imageHeight * bitsPerPixel];
+
                 for (int i = 0; i < imageArray.Length; i += 4)
                 {
                     var pixelNumber = i / bitsPerPixel;
@@ -40,15 +40,12 @@ namespace Zebble
 
                 // Blur it
                 if (blurRadius != 0)
-                {
-                    resultArray = GaussianBlur.Blur(imageArray, imageWidth, imageHeight, bitsPerPixel, blurRadius);
-                    imageArray = GaussianBlur.Blur(resultArray, imageWidth, imageHeight, bitsPerPixel, blurRadius);
-                    resultArray = GaussianBlur.Blur(imageArray, imageWidth, imageHeight, bitsPerPixel, blurRadius);
-                }
+                    imageArray = GaussianBlur.Blur(imageArray, imageWidth, imageHeight, bitsPerPixel, blurRadius);
+
                 // Open a stream to copy the image contents to the WriteableBitmap's pixel buffer 
                 using (Stream stream = bitmap.PixelBuffer.AsStream())
                 {
-                    await stream.WriteAsync(resultArray, 0, resultArray.Length);
+                    await stream.WriteAsync(imageArray, 0, imageArray.Length);
                 }
                 // Then encode and save the bitmap as a PNG file.
 

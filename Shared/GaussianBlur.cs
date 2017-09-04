@@ -11,44 +11,68 @@ namespace Zebble.Plugin
             var newRed = new byte[width * height];
             var newGreen = new byte[width * height];
             var newBlue = new byte[width * height];
+            var newAlpha = new byte[width * height];
             var result = new byte[width * height * bitsPerPixel];
 
             var red = new byte[image.Length / bitsPerPixel];
             var green = new byte[image.Length / bitsPerPixel];
             var blue = new byte[image.Length / bitsPerPixel];
+            var alpha = new byte[image.Length / bitsPerPixel];
 
             for (var i = 0; i < image.Length / bitsPerPixel; i++)
             {
                 var index = i * bitsPerPixel;
-                // skipping alpha
+
                 blue[i] = image[index];
                 green[i] = image[index + 1];
                 red[i] = image[index + 2];
+                alpha[i] = image[index + 3];
             }
-            var bxs = BoxesForGauss(radial, 3);
-            boxBlur_4(red, newRed, width, height, (bxs[0] - 1) / 2);
-            boxBlur_4(green, newGreen, width, height, (bxs[1] - 1) / 2);
-            boxBlur_4(blue, newBlue, width, height, (bxs[2] - 1) / 2);
 
-            for (var i = 0; i < result.Length / bitsPerPixel; i++)
-            {
-                var index = i * bitsPerPixel;
+            var bxs = BoxesForGauss(radial, 4);
+            boxBlur_R(red, newRed, width, height, (bxs[0] - 1) / 2);
+            boxBlur_R(green, newGreen, width, height, (bxs[1] - 1) / 2);
+            boxBlur_R(blue, newBlue, width, height, (bxs[2] - 1) / 2);
+            boxBlur_R(alpha, newAlpha, width, height, (bxs[3] - 1) / 2);
 
-                result[index] = newBlue[i];
-                result[index + 1] = newGreen[i];
-                result[index + 2] = newRed[i];
-                result[index + 3] = image[index + 3];
-            }
+            boxBlur(newRed, red, width, height, (bxs[0] - 1) / 2);
+            boxBlur(newGreen, green, width, height, (bxs[1] - 1) / 2);
+            boxBlur(newBlue, blue, width, height, (bxs[2] - 1) / 2);
+            boxBlur(newAlpha, alpha, width, height, (bxs[3] - 1) / 2);
+
+            boxBlur_R(red, newRed, width, height, (bxs[0] - 1) / 2);
+            boxBlur_R(green, newGreen, width, height, (bxs[1] - 1) / 2);
+            boxBlur_R(blue, newBlue, width, height, (bxs[2] - 1) / 2);
+            boxBlur_R(alpha, newAlpha, width, height, (bxs[3] - 1) / 2);
+
+            for (var y = 0; y < height; y++)
+                for (var x = 0; x < width; x++)
+                {
+                    int i = y * width + x;
+                    var index = i * bitsPerPixel;
+
+                    result[index] = newBlue[i];
+                    result[index + 1] = newGreen[i];
+                    result[index + 2] = newRed[i];
+                    result[index + 3] = alpha[i];// image[index + 3];// alpha; //Convert.ToByte(width / 2 - Math.Abs(width / 2 - x));// image[index + 3];                    
+                }
             return result;
         }
 
-        static void boxBlur_4(byte[] scl, byte[] tcl, int w, int h, double r)
+        static void boxBlur(byte[] scl, byte[] tcl, int w, int h, double r)
         {
             for (var i = 0; i < scl.Length; i++) tcl[i] = scl[i];
-            boxBlurH_4(tcl, scl, w, h, r);
-            boxBlurT_4(scl, tcl, w, h, r);
+            boxBlurH(tcl, scl, w, h, r);
+            boxBlurT(scl, tcl, w, h, r);
         }
-        static void boxBlurH_4(byte[] scl, byte[] tcl, int w, int h, double r)
+        static void boxBlur_R(byte[] scl, byte[] tcl, int w, int h, double r)
+        {
+            for (var i = 0; i < scl.Length; i++) tcl[i] = scl[i];
+
+            boxBlurT(tcl, scl, w, h, r);
+            boxBlurH(scl, tcl, w, h, r);
+        }
+        static void boxBlurH(byte[] scl, byte[] tcl, int w, int h, double r)
         {
             double iarr = 1 / (r + r + 1);
             for (var i = 0; i < h; i++)
@@ -65,7 +89,7 @@ namespace Zebble.Plugin
                 for (var j = w - r; j < w; j++) { val += lv - scl[li++]; tcl[ti++] = Convert.ToByte(Math.Round(val * iarr)); }
             }
         }
-        static void boxBlurT_4(byte[] scl, byte[] tcl, int w, int h, double r)
+        static void boxBlurT(byte[] scl, byte[] tcl, int w, int h, double r)
         {
             double iarr = 1 / (r + r + 1);
             for (var i = 0; i < w; i++)
