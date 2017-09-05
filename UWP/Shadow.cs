@@ -12,11 +12,11 @@ namespace Zebble
 {
     public partial class Shadow
     {
-        public static Task SaveAsPng(FileInfo target, int width, int height, int blurRadius, Color[] colors, int increaseValue)
+        public async static Task SaveAsPng(FileInfo target, int width, int height, int blurRadius, Color[] colors, int increaseValue, int xOffset,int  yOffset)
         {
             //if (pixels.Length != imageWidth * imageHeight)
             //    throw new Exception($"For a {imageWidth}X{imageHeight} image, an array of {imageWidth * imageHeight}" + " colors is expected.");
-            Device.UIThread.Run(async () =>
+            await Device.UIThread.Run(async () =>
             {
                 // TODO: Create a bitmap image with the specified width and height.
                 WriteableBitmap bitmap = new WriteableBitmap(width, height);
@@ -36,8 +36,8 @@ namespace Zebble
                 }
 
                 // Blur it
-                if (blurRadius != 0)
-                    imageArray = GaussianBlur.Blur(imageArray, width, height, bitsPerPixel, blurRadius, increaseValue);
+                //    if (blurRadius != 0)
+                imageArray = GaussianBlur.Blur(imageArray, width, height, bitsPerPixel, blurRadius, increaseValue, xOffset, yOffset);
                 // Open a stream to copy the image contents to the WriteableBitmap's pixel buffer 
                 using (Stream stream = bitmap.PixelBuffer.AsStream())
                 {
@@ -59,7 +59,6 @@ namespace Zebble
                     await encoder.FlushAsync();
                 }
             });
-            return Task.CompletedTask;
         }
     }
 }

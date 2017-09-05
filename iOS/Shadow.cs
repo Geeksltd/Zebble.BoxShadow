@@ -12,7 +12,7 @@ namespace Zebble
 {
     public partial class Shadow
     {
-        public static Task SaveAsPng(FileInfo target, int imageWidth, int imageHeight, int blurRadius, Color[] colors, int increaseValue)
+        public static async Task SaveAsPng(FileInfo target, int imageWidth, int imageHeight, int blurRadius, Color[] colors, int increaseValue)
         {
             Color backgroundColor = Colors.White;
             Color color = Colors.Black;
@@ -56,8 +56,6 @@ namespace Zebble
             //                                      bitmapBytesPerRow, colorSpace, CGImageAlphaInfo.PremultipliedFirst);             
             //}
 
-
-            return Task.CompletedTask;
         }
 
     }

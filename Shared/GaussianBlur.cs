@@ -6,7 +6,7 @@ namespace Zebble.Plugin
 {
     internal static class GaussianBlur
     {
-        public static byte[] Blur(byte[] image, int width, int height, int bitsPerPixel, int radial, int increaseValue)
+        public static byte[] Blur(byte[] image, int width, int height, int bitsPerPixel, int radial, int increaseValue, int xOffset, int yOffset)
         {
             var newRed = new byte[width * height];
             var newGreen = new byte[width * height];
@@ -29,46 +29,56 @@ namespace Zebble.Plugin
                 alpha[i] = image[index + 3];
             }
 
-            var bxs = BoxesForGauss(radial, 4);
+            var bxs = BoxesForGauss(Convert.ToInt32(radial / 2.9), 3);
             boxBlur_R(red, newRed, width, height, (bxs[0] - 1) / 2);
-            boxBlur_R(green, newGreen, width, height, (bxs[1] - 1) / 2);
-            boxBlur_R(blue, newBlue, width, height, (bxs[2] - 1) / 2);
-            boxBlur_R(alpha, newAlpha, width, height, (bxs[3] - 1) / 2);
+            boxBlur_R(green, newGreen, width, height, (bxs[0] - 1) / 2);
+            boxBlur_R(blue, newBlue, width, height, (bxs[0] - 1) / 2);
+            boxBlur_R(alpha, newAlpha, width, height, (bxs[0] - 1) / 2);
 
-            boxBlur(newRed, red, width, height, (bxs[0] - 1) / 2);
-            boxBlur(newGreen, green, width, height, (bxs[1] - 1) / 2);
-            boxBlur(newBlue, blue, width, height, (bxs[2] - 1) / 2);
-            boxBlur(newAlpha, alpha, width, height, (bxs[3] - 1) / 2);
+            boxBlur(newRed, red, width, height, Convert.ToInt32((bxs[1] - 1) / 4));
+            boxBlur(newGreen, green, width, height, Convert.ToInt32((bxs[1] - 1) / 4));
+            boxBlur(newBlue, blue, width, height, Convert.ToInt32((bxs[1] - 1) / 4));
+            boxBlur(newAlpha, alpha, width, height, Convert.ToInt32((bxs[1] - 1) / 4));
 
-            boxBlur_R(red, newRed, width, height, (bxs[0] - 1) / 2);
-            boxBlur_R(green, newGreen, width, height, (bxs[1] - 1) / 2);
-            boxBlur_R(blue, newBlue, width, height, (bxs[2] - 1) / 2);
-            boxBlur_R(alpha, newAlpha, width, height, (bxs[3] - 1) / 2);
+            boxBlur_R(red, newRed, width, height, Convert.ToInt32((bxs[2] - 1) / 8));
+            boxBlur_R(green, newGreen, width, height, Convert.ToInt32((bxs[2] - 1) / 8));
+            boxBlur_R(blue, newBlue, width, height, Convert.ToInt32((bxs[2] - 1) / 8));
+            boxBlur_R(alpha, newAlpha, width, height, Convert.ToInt32((bxs[2] - 1) / 8));
 
 
             int cutValue = increaseValue / 2;
             for (var y = 0; y < height; y++)
                 for (var x = 0; x < width; x++)
                 {
-                    var isCenter = false;
+                    var isTransparent = false;
                     int i = y * width + x;
                     var index = i * bitsPerPixel;
-                    if (y > cutValue && y < (height - cutValue))
-                        if (x > cutValue && x < (width - cutValue))
-                        {
-                            result[index] = Colors.Transparent.Red;
-                            result[index + 1] = Colors.Transparent.Green;
-                            result[index + 2] = Colors.Transparent.Blue;
-                            result[index + 3] = Colors.Transparent.Alpha;
-                            isCenter = true;
-                        }
 
-                    if (!isCenter)
+                    if (y <= yOffset)
+                        isTransparent = true;
+                    else if (x <= xOffset)
+                        isTransparent = true;
+                    else if (y >= cutValue && y <= (height - cutValue - yOffset - 1))
+                    {
+                        if (x >= cutValue && x <= (width - cutValue - xOffset - 1))
+                            isTransparent = true;
+
+                    }
+
+
+                    if (isTransparent)
+                    {
+                        result[index] = Colors.Transparent.Blue;
+                        result[index + 1] = Colors.Transparent.Green;
+                        result[index + 2] = Colors.Transparent.Red;
+                        result[index + 3] = Colors.Transparent.Alpha;
+                    }
+                    else
                     {
                         result[index] = newBlue[i];
                         result[index + 1] = newGreen[i];
                         result[index + 2] = newRed[i];
-                        result[index + 3] = alpha[i];// image[index + 3];// alpha; //Convert.ToByte(width / 2 - Math.Abs(width / 2 - x));// image[index + 3];
+                        result[index + 3] = newAlpha[i];// image[index + 3];// alpha; //Convert.ToByte(width / 2 - Math.Abs(width / 2 - x));//
                     }
                 }
             return result;
@@ -86,6 +96,9 @@ namespace Zebble.Plugin
 
             boxBlurT(tcl, scl, w, h, r);
             boxBlurH(scl, tcl, w, h, r);
+
+            //boxBlurH(scl, tcl, w, h, r);
+            //boxBlurT(tcl, scl, w, h, r);
         }
         static void boxBlurH(byte[] scl, byte[] tcl, int w, int h, double r)
         {
@@ -122,7 +135,7 @@ namespace Zebble.Plugin
             }
         }
 
-        static double[] BoxesForGauss(int sigma, int n)  // standard deviation, number of boxes
+        static int[] BoxesForGauss(int sigma, int n)  // standard deviation, number of boxes
         {
             var wIdeal = Math.Sqrt((12 * sigma * sigma / n) + 1);  // Ideal averaging filter width 
             var wl = Math.Floor(wIdeal); if (wl % 2 == 0) wl--;
@@ -132,10 +145,10 @@ namespace Zebble.Plugin
             var m = Math.Round(mIdeal);
             // var sigmaActual = Math.sqrt( (m*wl*wl + (n-m)*wu*wu - n)/12 );
 
-            var sizes = new double[n];
+            var sizes = new int[n];
             for (var i = 0; i < n; i++)
             {
-                sizes[i] = (i < m ? wl : wu);
+                sizes[i] = (int)(i < m ? wl : wu);
             }
             return sizes;
         }
