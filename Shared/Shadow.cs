@@ -3,14 +3,17 @@
     using System;
     using System.IO;
     using System.Threading.Tasks;
+    using Zebble.Plugin;
 
-
-    public partial class Shadow : Canvas
+    public partial class Shadow : ImageView
     {
         View Owner;
 
-        public Shadow() => Absolute = true;
-
+        public Shadow()
+        {
+            Absolute = true;
+            Nav.CurrentPage.Add(this);
+        }
         public View For
         {
             get => Owner;
@@ -24,11 +27,19 @@
         }
 
         public Color Color { get; set; } = Colors.Black;
-        public int XOffset { get; set; } = 10;
-        public int YOffset { get; set; } = 10;
-        public int SpreadRadius { get; set; } = 10;
+        public int XOffset { get; set; } = 0;
+        public int YOffset { get; set; } = 0;
+        public int SpreadRadius { get; set; } = 0; //{ get; set {  Owner.X.Set( value); Owner.Y.Set(value); } } = 0;
         public int BlurRadius { get; set; } = 10;
 
+        public void SetSpreadRadius(int value)
+        {
+            X.Set(X.CurrentValue + value / 2);
+            Y.Set(Y.CurrentValue + value / 2);
+            Height.Set(Owner.Height.CurrentValue + value);
+            Width.Set(Owner.Width.CurrentValue + value);
+            SpreadRadius = value;
+        }
         public override async Task OnPreRender()
         {
             await base.OnPreRender();
@@ -41,23 +52,35 @@
             Owner.Y.Changed.HandleWith(SyncWithOwner);
             // Owner.OpacityChanged.Handle(SyncWithOwner);
             // Owner.VisibleChanged.Handle(SyncWithOwner);
-            await Owner.Parent.AddBefore(Owner);
+            //BackgroundImageStretch = Stretch.Fill;
+
+          
 
             // TODO: Upon removal of the owner, remove this too. Also set its visibility
 
             var image = GetImagePath();
-            if (!await image.SyncExists()) await CreateImageFile(image);
-            BackgroundImagePath = image.FullName;
+            if (!await image.SyncExists())
+                await CreateImageFile(image);
+            Path = image.FullName;
         }
 
         void SyncWithOwner()
         {
-            X.Set(Owner.ActualX + XOffset);
-            Y.Set(Owner.ActualY + YOffset);
+            var increaseValue = BlurRadius + SpreadRadius;
+            Absolute = true;
+
+            X.Set(Owner.ActualX + XOffset - increaseValue / 2);
+            Y.Set(Owner.ActualY + YOffset - increaseValue / 2);
+
+            //  Height.Set(Owner.Height.CurrentValue + (BlurRadius * 2) + (SpreadRadius * 2));
+            //  Width.Set(Owner.Width.CurrentValue + (BlurRadius * 2) + (SpreadRadius * 2));
+            Height.Set(Owner.Height.CurrentValue + increaseValue);
+            Width.Set(Owner.Width.CurrentValue + increaseValue);
+
+
             Visible = Owner.Visible;
             Opacity = Owner.Opacity;
         }
-
         FileInfo GetImagePath()
         {
             var name = new object[] { Owner.Width, Owner.Height, Color, SpreadRadius, BlurRadius }
@@ -66,167 +89,79 @@
             return Device.IO.Cache.GetFile(name + ".png");
         }
 
-
-
         Task CreateImageFile(FileInfo savePath)
         {
             // TODO: Generate an image for the blur using semi transparent pixels:
-            var imageBuffer = new byte[Convert.ToInt32(4 * Width.CurrentValue * Height.CurrentValue)];
+            var increaseValue = BlurRadius + SpreadRadius;
+            var height = (int)Height.CurrentValue;
+            var width = (int)Width.CurrentValue;
 
-            for (int row = 0; row < Owner.Height.CurrentValue; row++)
-            {
-                for (int col = 0; col < Owner.Width.CurrentValue; col++)
+
+            var length = height * width;
+            Color[] colors = new Color[length];
+            Color backgroundColor = Colors.Transparent;
+
+            double alphaRatio = Math.Abs(Color.Alpha - backgroundColor.Alpha) / (double)(BlurRadius * 1.2);
+            for (var y = 0; y < height; y++)
+                for (var x = 0; x < width; x++)
                 {
-                    var offset = (row * (int)100 * 4) + (col * 4);
-                    imageBuffer[offset] = 0x00;      // Red
-                    imageBuffer[offset + 1] = 0xFF;  // Green
-                    imageBuffer[offset + 2] = 0x00;  // Blue
-                    imageBuffer[offset + 3] = 0xFF;  // Alpha
-                }
-            }
+                    var isCorner = true;
+                    int i = y * width + x;
+                    byte alpha = Convert.ToByte(width / 2 - Math.Abs(width / 2 - x));
 
-            var result = Save(savePath, imageBuffer);
+                    if (x % width < BlurRadius) //left
+                    {
+                        if (y < x) // Top left band
+                            alpha = Convert.ToByte(y * alphaRatio);
+                        else if ((height - y) < x) // bottom left band
+                            alpha = Convert.ToByte((height - y) * alphaRatio);
+                        else
+                            alpha = Convert.ToByte(x * alphaRatio);
+                    }
+                    else if (x % width >= width - BlurRadius) //right
+                    {
+                        if (y < (width - x)) // Top right band
+                            alpha = Convert.ToByte(y * alphaRatio);
+                        else if ((height - y) < (width - x)) // Bottom right band
+                            alpha = Convert.ToByte((height - y) * alphaRatio);
+                        else
+                            alpha = Convert.ToByte((width - x) * alphaRatio);
+                    }
+                    else if (y < BlurRadius) // Top band
+                        alpha = Convert.ToByte(y * alphaRatio);
+                    else if (y >= (height - 1 - BlurRadius)) // Bottom band
+                        alpha = Convert.ToByte((height - y) * alphaRatio);
+                    else  //center
+                        isCorner = false;
+
+                    if (isCorner)
+                        //    colors[i] = new Color(backgroundColor.Red, backgroundColor.Green, backgroundColor.Blue, alpha);
+                        colors[i] = new Color(5, 5, 5, alpha);
+                    else
+                        colors[i] = new Zebble.Color(Color.Red, Color.Green, Color.Blue, Color.Alpha);
+                }
+
+            //const int bitsPerPixel = 4;
+            //var imageArray = new byte[width * height * bitsPerPixel];
+
+            //for (int i = 0; i < imageArray.Length; i += 4)
+            //{
+            //    var pixelNumber = i / bitsPerPixel;
+            //    var color = colors[pixelNumber].Render();
+
+            //    imageArray[i] = color.B; // Blue
+            //    imageArray[i + 1] = color.G;  // Green
+            //    imageArray[i + 2] = color.R; // Red
+            //    imageArray[i + 3] = color.A;  // Alpha                
+            //}
+
+            //// Blur it
+            //if (BlurRadius != 0)
+            //    imageArray = GaussianBlur.Blur(imageArray, width, height, bitsPerPixel, BlurRadius, increaseValue);
+            //var result = SaveAsPng(savePath, width, height, imageArray);
+
+            var result = SaveAsPng(savePath, width, height, BlurRadius, colors, increaseValue);
             return Task.CompletedTask;
         }
-
-        //const int CHANNELS = 4;
-
-        //public static byte[] CreateShadow(byte[] bitmap, int width,int height, int radius, float opacity)
-        //{
-        //    // Alpha mask with opacity
-        //    //var matrix = new ColorMatrix(new float[][] {
-        //    //new float[] {  0F,  0F,  0F, 0F,      0F },
-        //    //new float[] {  0F,  0F,  0F, 0F,      0F },
-        //    //new float[] {  0F,  0F,  0F, 0F,      0F },
-        //    //new float[] { -1F, -1F, -1F, opacity, 0F },
-        //    //new float[] {  1F,  1F,  1F, 0F,      1F }
-        //    //   });
-        //    //  var imageAttributes = new ImageAttributes();
-        //    //  imageAttributes.SetColorMatrix(matrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
-
-
-
-        //    var shadow = new byte[width + 4 * radius* height + 4 * radius];
-
-        //    Rectangle r = new Rectangle();
-
-
-        //    using (var graphics = Graphics.FromImage(shadow))
-        //        graphics.DrawImage(bitmap, new Rectangle(2 * radius, 2 * radius, width, height), 0, 0, width, height, GraphicsUnit.Pixel, imageAttributes);
-
-        //    // Gaussian blur
-        //    var clone = shadow.Clone() as Bitmap;
-        //    var shadowData = shadow.LockBits(new Rectangle(0, 0, shadow.Width, shadow.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
-        //    var cloneData = clone.LockBits(new Rectangle(0, 0, clone.Width, clone.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
-
-        //    var boxes = DetermineBoxes(radius, 3);
-        //    BoxBlur(shadowData, cloneData, shadow.Width, shadow.Height, (boxes[0] - 1) / 2);
-        //    BoxBlur(shadowData, cloneData, shadow.Width, shadow.Height, (boxes[1] - 1) / 2);
-        //    BoxBlur(shadowData, cloneData, shadow.Width, shadow.Height, (boxes[2] - 1) / 2);
-
-        //   // shadow.UnlockBits(shadowData);
-        //   // clone.UnlockBits(cloneData);
-        //    return shadow;
-        //}
-
-        //private static void BoxBlur(byte[] p1, byte[] p2, int width, int height, int radius)
-        //{
-        //    int radius2 = 2 * radius + 1;
-        //    int[] sum = new int[CHANNELS];
-        //    int[] FirstValue = new int[CHANNELS];
-        //    int[] LastValue = new int[CHANNELS];
-
-        //    // Horizontal
-        //    int stride = width * 4;
-        //    for (var row = 0; row < height; row++)
-        //    {
-        //        int start = row * stride;
-        //        int left = start;
-        //        int right = start + radius * CHANNELS;
-
-        //        for (int channel = 0; channel < CHANNELS; channel++)
-        //        {
-        //            FirstValue[channel] = p1[start + channel];
-        //            LastValue[channel] = p1[start + (width - 1) * CHANNELS + channel];
-        //            sum[channel] = (radius + 1) * FirstValue[channel];
-        //        }
-        //        for (var column = 0; column < radius; column++)
-        //            for (int channel = 0; channel < CHANNELS; channel++)
-        //                sum[channel] += p1[start + column * CHANNELS + channel];
-        //        for (var column = 0; column <= radius; column++, right += CHANNELS, start += CHANNELS)
-        //            for (int channel = 0; channel < CHANNELS; channel++)
-        //            {
-        //                sum[channel] += p1[right + channel] - FirstValue[channel];
-        //                p2[start + channel] = (byte)(sum[channel] / radius2);
-        //            }
-        //        for (var column = radius + 1; column < width - radius; column++, left += CHANNELS, right += CHANNELS, start += CHANNELS)
-        //            for (int channel = 0; channel < CHANNELS; channel++)
-        //            {
-        //                sum[channel] += p1[right + channel] - p1[left + channel];
-        //                p2[start + channel] = (byte)(sum[channel] / radius2);
-        //            }
-        //        for (var column = width - radius; column < width; column++, left += CHANNELS, start += CHANNELS)
-        //            for (int channel = 0; channel < CHANNELS; channel++)
-        //            {
-        //                sum[channel] += LastValue[channel] - p1[left + channel];
-        //                p2[start + channel] = (byte)(sum[channel] / radius2);
-        //            }
-        //    }
-
-        //    // Vertical
-        //    stride = width * 4;
-        //    for (int column = 0; column < width; column++)
-        //    {
-        //        int start = column * CHANNELS;
-        //        int top = start;
-        //        int bottom = start + radius * stride;
-
-        //        for (int channel = 0; channel < CHANNELS; channel++)
-        //        {
-        //            FirstValue[channel] = p2[start + channel];
-        //            LastValue[channel] = p2[start + (height - 1) * stride + channel];
-        //            sum[channel] = (radius + 1) * FirstValue[channel];
-        //        }
-        //        for (int row = 0; row < radius; row++)
-        //            for (int channel = 0; channel < CHANNELS; channel++)
-        //                sum[channel] += p2[start + row * stride + channel];
-        //        for (int row = 0; row <= radius; row++, bottom += stride, start += stride)
-        //            for (int channel = 0; channel < CHANNELS; channel++)
-        //            {
-        //                sum[channel] += p2[bottom + channel] - FirstValue[channel];
-        //                p1[start + channel] = (byte)(sum[channel] / radius2);
-        //            }
-        //        for (int row = radius + 1; row < height - radius; row++, top += stride, bottom += stride, start += stride)
-        //            for (int channel = 0; channel < CHANNELS; channel++)
-        //            {
-        //                sum[channel] += p2[bottom + channel] - p2[top + channel];
-        //                p1[start + channel] = (byte)(sum[channel] / radius2);
-        //            }
-        //        for (int row = height - radius; row < height; row++, top += stride, start += stride)
-        //            for (int channel = 0; channel < CHANNELS; channel++)
-        //            {
-        //                sum[channel] += LastValue[channel] - p2[top + channel];
-        //                p1[start + channel] = (byte)(sum[channel] / radius2);
-        //            }
-        //    }
-        //}
-
-        //private static int[] DetermineBoxes(double Sigma, int BoxCount)
-        //{
-        //    double IdealWidth = Math.Sqrt((12 * Sigma * Sigma / BoxCount) + 1);
-        //    int Lower = (int)Math.Floor(IdealWidth);
-        //    if (Lower % 2 == 0)
-        //        Lower--;
-        //    int Upper = Lower + 2;
-
-        //    double MedianWidth = (12 * Sigma * Sigma - BoxCount * Lower * Lower - 4 * BoxCount * Lower - 3 * BoxCount) / (-4 * Lower - 4);
-        //    int Median = (int)Math.Round(MedianWidth);
-
-        //    int[] BoxSizes = new int[BoxCount];
-        //    for (int i = 0; i < BoxCount; i++)
-        //        BoxSizes[i] = (i < Median) ? Lower : Upper;
-        //    return BoxSizes;
-        //}
-
     }
 }
