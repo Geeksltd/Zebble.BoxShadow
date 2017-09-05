@@ -1,21 +1,18 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 using CoreGraphics;
 using UIKit;
-using System.Drawing;
 using Foundation;
-using System.Runtime.InteropServices;
+
 
 namespace Zebble
 {
     public partial class Shadow
     {
-        public static async Task SaveAsPng(FileInfo target, int imageWidth, int imageHeight, int blurRadius, Color[] colors, int increaseValue)
+        public static async Task SaveAsPng(FileInfo target, int imageWidth, int imageHeight, Color[] colors)
         {
-            Color backgroundColor = Colors.White;
-            Color color = Colors.Black;
+            //  Color backgroundColor = Colors.White;
+            //   Color color = Colors.Black;
             var rect = new CGRect(0, 0, imageWidth, imageHeight);
 
 

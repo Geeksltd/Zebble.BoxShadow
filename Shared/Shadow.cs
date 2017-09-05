@@ -135,16 +135,14 @@
                         alpha = Convert.ToByte(y * alphaRatio);
                     else if (y >= (height - 1 - radius)) // Bottom band
                         alpha = Convert.ToByte((height - y) * alphaRatio);
-                    // else if ((y > height / 2 - radius) && (y < height / 2 + radius)  && (x > width / 2 - radius) && (x < width / 2 + radius))
-
-                    else if (y >= increaseValue && y <= (height - increaseValue - YOffset - 1))
+                    else if (y >= increaseValue && y <= (height - increaseValue - YOffset - 1)) // crop the center
                     {
                         if (x >= increaseValue && x <= (width - increaseValue - XOffset - 1))
                             alpha = 255;
                         else
                             isCorner = false;
                     }
-                    else   //center
+                    else   //others
                         isCorner = false;
 
                     if (isCorner)
@@ -153,26 +151,10 @@
                         colors[i] = new Zebble.Color(Color.Red, Color.Green, Color.Blue, Color.Alpha);// Convert.ToByte(Math.Abs(Color.Alpha - 10)));
                 }
 
-            //const int bitsPerPixel = 4;
-            //var imageArray = new byte[width * height * bitsPerPixel];
+            // Blur it           
+            colors = GaussianBlur.Blur(colors, width, height, BlurRadius, increaseValue, XOffset, YOffset);
 
-            //for (int i = 0; i < imageArray.Length; i += 4)
-            //{
-            //    var pixelNumber = i / bitsPerPixel;
-            //    var color = colors[pixelNumber].Render();
-
-            //    imageArray[i] = color.B; // Blue
-            //    imageArray[i + 1] = color.G;  // Green
-            //    imageArray[i + 2] = color.R; // Red
-            //    imageArray[i + 3] = color.A;  // Alpha                
-            //}
-
-            //// Blur it
-            //if (BlurRadius != 0)
-            //    imageArray = GaussianBlur.Blur(imageArray, width, height, bitsPerPixel, BlurRadius, increaseValue);
-            //var result = SaveAsPng(savePath, width, height, imageArray);
-
-            await SaveAsPng(savePath, width, height, BlurRadius, colors, increaseValue, XOffset, YOffset);
+            await SaveAsPng(savePath, width, height, colors);
         }
     }
 }

@@ -12,7 +12,7 @@ namespace Zebble
 {
     public partial class Shadow
     {
-        public async static Task SaveAsPng(FileInfo target, int width, int height, int blurRadius, Color[] colors, int increaseValue, int xOffset,int  yOffset)
+        public async static Task SaveAsPng(FileInfo target, int width, int height, Color[] colors)
         {
             //if (pixels.Length != imageWidth * imageHeight)
             //    throw new Exception($"For a {imageWidth}X{imageHeight} image, an array of {imageWidth * imageHeight}" + " colors is expected.");
@@ -35,9 +35,6 @@ namespace Zebble
                     imageArray[i + 3] = color.A;  // Alpha                
                 }
 
-                // Blur it
-                //    if (blurRadius != 0)
-                imageArray = GaussianBlur.Blur(imageArray, width, height, bitsPerPixel, blurRadius, increaseValue, xOffset, yOffset);
                 // Open a stream to copy the image contents to the WriteableBitmap's pixel buffer 
                 using (Stream stream = bitmap.PixelBuffer.AsStream())
                 {

@@ -6,44 +6,59 @@ namespace Zebble.Plugin
 {
     internal static class GaussianBlur
     {
-        public static byte[] Blur(byte[] image, int width, int height, int bitsPerPixel, int radial, int increaseValue, int xOffset, int yOffset)
+        public static Color[] Blur(Color[] colors, int width, int height, int radial, int increaseValue, int xOffset, int yOffset)
         {
+             int bitsPerPixel = 4;
+            var imageArray = new byte[width * height * bitsPerPixel];
+
+            for (int i = 0; i < imageArray.Length; i += 4)
+            {
+                var pixelNumber = i / bitsPerPixel;
+                var color = colors[pixelNumber];
+
+                imageArray[i] = color.Blue; // Blue
+                imageArray[i + 1] = color.Green;  // Green
+                imageArray[i + 2] = color.Red; // Red
+                imageArray[i + 3] = color.Alpha;  // Alpha                
+            }
+
+
             var newRed = new byte[width * height];
             var newGreen = new byte[width * height];
             var newBlue = new byte[width * height];
             var newAlpha = new byte[width * height];
-            var result = new byte[width * height * bitsPerPixel];
+            var result = new Color[width * height];
 
-            var red = new byte[image.Length / bitsPerPixel];
-            var green = new byte[image.Length / bitsPerPixel];
-            var blue = new byte[image.Length / bitsPerPixel];
-            var alpha = new byte[image.Length / bitsPerPixel];
+            var red = new byte[imageArray.Length / bitsPerPixel];
+            var green = new byte[imageArray.Length / bitsPerPixel];
+            var blue = new byte[imageArray.Length / bitsPerPixel];
+            var alpha = new byte[imageArray.Length / bitsPerPixel];
 
-            for (var i = 0; i < image.Length / bitsPerPixel; i++)
+            for (var i = 0; i < imageArray.Length / bitsPerPixel; i++)
             {
                 var index = i * bitsPerPixel;
 
-                blue[i] = image[index];
-                green[i] = image[index + 1];
-                red[i] = image[index + 2];
-                alpha[i] = image[index + 3];
+                blue[i] = imageArray[index];
+                green[i] = imageArray[index + 1];
+                red[i] = imageArray[index + 2];
+                alpha[i] = imageArray[index + 3];
             }
 
             var bxs = BoxesForGauss(Convert.ToInt32(radial / 2.9), 3);
-            boxBlur_R(red, newRed, width, height, (bxs[0] - 1) / 2);
-            boxBlur_R(green, newGreen, width, height, (bxs[0] - 1) / 2);
-            boxBlur_R(blue, newBlue, width, height, (bxs[0] - 1) / 2);
-            boxBlur_R(alpha, newAlpha, width, height, (bxs[0] - 1) / 2);
+            boxBlurR(red, newRed, width, height, (bxs[0] - 1) / 2);
+            boxBlurR(green, newGreen, width, height, (bxs[0] - 1) / 2);
+            boxBlurR(blue, newBlue, width, height, (bxs[0] - 1) / 2);
+            boxBlurR(alpha, newAlpha, width, height, (bxs[0] - 1) / 2);
 
             boxBlur(newRed, red, width, height, Convert.ToInt32((bxs[1] - 1) / 4));
             boxBlur(newGreen, green, width, height, Convert.ToInt32((bxs[1] - 1) / 4));
             boxBlur(newBlue, blue, width, height, Convert.ToInt32((bxs[1] - 1) / 4));
             boxBlur(newAlpha, alpha, width, height, Convert.ToInt32((bxs[1] - 1) / 4));
 
-            boxBlur_R(red, newRed, width, height, Convert.ToInt32((bxs[2] - 1) / 8));
-            boxBlur_R(green, newGreen, width, height, Convert.ToInt32((bxs[2] - 1) / 8));
-            boxBlur_R(blue, newBlue, width, height, Convert.ToInt32((bxs[2] - 1) / 8));
-            boxBlur_R(alpha, newAlpha, width, height, Convert.ToInt32((bxs[2] - 1) / 8));
+            boxBlurR(red, newRed, width, height, Convert.ToInt32((bxs[2] - 1) / 8));
+            boxBlurR(green, newGreen, width, height, Convert.ToInt32((bxs[2] - 1) / 8));
+            boxBlurR(blue, newBlue, width, height, Convert.ToInt32((bxs[2] - 1) / 8));
+            boxBlurR(alpha, newAlpha, width, height, Convert.ToInt32((bxs[2] - 1) / 8));
 
 
             int cutValue = increaseValue / 2;
@@ -52,7 +67,7 @@ namespace Zebble.Plugin
                 {
                     var isTransparent = false;
                     int i = y * width + x;
-                    var index = i * bitsPerPixel;
+                  //  var index = i * bitsPerPixel;
 
                     if (y <= yOffset)
                         isTransparent = true;
@@ -68,17 +83,15 @@ namespace Zebble.Plugin
 
                     if (isTransparent)
                     {
-                        result[index] = Colors.Transparent.Blue;
-                        result[index + 1] = Colors.Transparent.Green;
-                        result[index + 2] = Colors.Transparent.Red;
-                        result[index + 3] = Colors.Transparent.Alpha;
+                        result[i] = Colors.Transparent;                    
                     }
                     else
                     {
-                        result[index] = newBlue[i];
-                        result[index + 1] = newGreen[i];
-                        result[index + 2] = newRed[i];
-                        result[index + 3] = newAlpha[i];// image[index + 3];// alpha; //Convert.ToByte(width / 2 - Math.Abs(width / 2 - x));//
+                        result[i] = new Color(newRed[i], newGreen[i], newBlue[i], newAlpha[i]);
+                       //result[index] = newBlue[i];
+                       // result[index + 1] = newGreen[i];
+                       // result[index + 2] = newRed[i];
+                       // result[index + 3] = newAlpha[i];// image[index + 3];// alpha; //Convert.ToByte(width / 2 - Math.Abs(width / 2 - x));//
                     }
                 }
             return result;
@@ -90,7 +103,7 @@ namespace Zebble.Plugin
             boxBlurH(tcl, scl, w, h, r);
             boxBlurT(scl, tcl, w, h, r);
         }
-        static void boxBlur_R(byte[] scl, byte[] tcl, int w, int h, double r)
+        static void boxBlurR(byte[] scl, byte[] tcl, int w, int h, double r)
         {
             for (var i = 0; i < scl.Length; i++) tcl[i] = scl[i];
 
