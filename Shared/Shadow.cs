@@ -28,7 +28,6 @@
         }
 
         public Color Color { get; set; } = Colors.Black;
-        public Color BackgroundColor { get; set; } = Colors.Transparent;
         public int XOffset { get; set; } = 0;
         public int YOffset { get; set; } = 0;
         public int SpreadRadius { get; set; } = 0; //{ get; set {  Owner.X.Set( value); Owner.Y.Set(value); } } = 0;

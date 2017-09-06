@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using CoreGraphics;
 using UIKit;
 using Foundation;
-
+using System;
 
 namespace Zebble
 {
@@ -11,19 +11,26 @@ namespace Zebble
     {
         public static async Task SaveAsPng(FileInfo target, int imageWidth, int imageHeight, Color[] colors)
         {
-            //  Color backgroundColor = Colors.White;
-            //   Color color = Colors.Black;
-            var rect = new CGRect(0, 0, imageWidth, imageHeight);
+            var byteArray = new byte[imageWidth * imageHeight * 4];
 
+            for (int i = 0; i < colors.Length; i += 4)
+            {
+                var pixelNumber = i / 4;
+                var color = colors[pixelNumber];
 
-            //var blur = UIBlurEffect.FromStyle(UIBlurEffectStyle.Light);
-            //var blurView = new UIVisualEffectView(blur)
-            //{
-            //    Frame = new RectangleF(0, 0, imageWidth, imageHeight)
-            //};
+                byteArray[i] = color.Blue; // Blue
+                byteArray[i + 1] = color.Green;  // Green
+                byteArray[i + 2] = color.Red; // Red
+                byteArray[i + 3] = color.Alpha;  // Alpha                
+            }
 
-            UIImage sourceImage = new UIImage();
-            sourceImage.Draw(rect);
+            // colors.CopyTo(byteArray, 0);
+
+            string base64String = Convert.ToBase64String(byteArray);
+
+            NSData nSData = new NSData(base64String, NSDataBase64DecodingOptions.IgnoreUnknownCharacters);
+
+            UIImage sourceImage = new UIImage(nSData);
 
             using (var ns = new NSAutoreleasePool())
             {
@@ -36,24 +43,6 @@ namespace Zebble
                     }
                 }
             }
-
-
-            //var pixelsWide = imageWidth;
-            //var pixelsHigh = imageHeight;
-            //var bitmapBytesPerRow = pixelsWide * 4;
-            //var bitmapByteCount = bitmapBytesPerRow * pixelsHigh;
-            ////Note implicit colorSpace.Dispose() 
-            //using (var colorSpace = CGColorSpace.CreateDeviceRGB())
-            //{
-            //    //Allocate the bitmap and create context
-            //    var bitmapData = Marshal.AllocHGlobal(bitmapByteCount);
-
-
-            //    var context = new CGBitmapContext(bitmapData, pixelsWide, pixelsHigh, 8,
-            //                                      bitmapBytesPerRow, colorSpace, CGImageAlphaInfo.PremultipliedFirst);             
-            //}
-
         }
-
     }
 }
