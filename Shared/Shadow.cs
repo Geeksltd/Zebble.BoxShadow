@@ -10,7 +10,11 @@
     {
         View Owner;
 
-        public Shadow() => Absolute = true;
+        public Shadow()
+        {
+            Absolute = true;
+            //  Nav.CurrentPage.Add(this);
+        }
         public View For
         {
             get => Owner;
@@ -40,9 +44,11 @@
             Owner.X.Changed.Handle(SyncWithOwner);
             Owner.Y.Changed.Handle(SyncWithOwner);
 
-            // Owner.OpacityChanged.Handle(SyncWithOwner);
-            // Owner.VisibleChanged.Handle(SyncWithOwner);
-            //BackgroundImageStretch = Stretch.Fill;
+            Owner.Height.Changed.Handle(SyncWithOwner);
+            Owner.Width.Changed.Handle(SyncWithOwner);
+
+            Owner.VisibilityChanged.Handle(SyncWithOwner);
+            Stretch = Stretch.Fill;
 
             // TODO: Upon removal of the owner, remove this too. Also set its visibility          
         }
@@ -50,10 +56,10 @@
         async Task SyncWithOwner()
         {
             var increaseValue = BlurRadius + SpreadRadius * 2;
-            Absolute = true;
 
-            X.Set(Owner.ActualX - increaseValue / 2);
-            Y.Set(Owner.ActualY - increaseValue / 2);
+           
+            X.Set(  Owner.CalculateAbsoluteX() - increaseValue / 2);
+            Y.Set(Owner.CalculateAbsoluteY() - increaseValue / 2);
 
             //  Height.Set(Owner.Height.CurrentValue + (BlurRadius * 2) + (SpreadRadius * 2));
             //  Width.Set(Owner.Width.CurrentValue + (BlurRadius * 2) + (SpreadRadius * 2));
@@ -64,10 +70,13 @@
             Visible = Owner.Visible;
             Opacity = Owner.Opacity;
 
-            var image = GetImagePath();
-            if (!await image.SyncExists())
-                await CreateImageFile(image);
-            Path = image.FullName;
+            if (Visible)
+            {
+                var image = GetImagePath();
+                if (!await image.SyncExists())
+                    await CreateImageFile(image);
+                Path = image.FullName;
+            }
         }
         FileInfo GetImagePath()
         {
@@ -89,7 +98,7 @@
             Color[] colors = Enumerable.Repeat(Colors.Transparent, length).ToArray(); ;// new Color[length];
 
 
-            double alphaRatio = BlurRadius == 0 ? 0 : Math.Abs(Color.Alpha - BackgroundColor.Alpha) / (double)(BlurRadius * 1.2);
+            // double alphaRatio = BlurRadius == 0 ? 0 : Math.Abs(Color.Alpha - BackgroundColor.Alpha) / (double)(BlurRadius * 1.2);
             var radius = BlurRadius == 0 ? 0 : (BlurRadius / 3);
 
             for (var y = YOffset; y < height; y++)
@@ -97,34 +106,50 @@
                 {
                     var isCorner = true;
                     int i = y * width + x;
-                    byte alpha = Convert.ToByte(width / 2 - Math.Abs(width / 2 - x));
+                    // int alpha = width / 2 - Math.Abs(width / 2 - x);
 
-                    if (x % width < radius) //left
-                    {
-                        if (y < x) // Top left band
-                            alpha = Convert.ToByte(y * alphaRatio);
-                        else if ((height - y) < x) // bottom left band
-                            alpha = Convert.ToByte((height - y) * alphaRatio);
-                        else
-                            alpha = Convert.ToByte(x * alphaRatio);
-                    }
+                    //if (x % width < radius) //left
+                    //{
+                    //    if (y < x) // Top left band
+                    //        alpha = y * alphaRatio;
+                    //    else if ((height - y) < x) // bottom left band
+                    //        alpha = (height - y) * alphaRatio;
+                    //    else
+                    //        alpha = x * alphaRatio;
+                    //}
+                    //else if (x % width >= width - radius) //right
+                    //{
+                    //    if (y < (width - x)) // Top right band
+                    //        alpha = y * alphaRatio;
+                    //    else if ((height - y) < (width - x)) // Bottom right band
+                    //        alpha = (height - y) * alphaRatio;
+                    //    else
+                    //        alpha = (width - x) * alphaRatio;
+                    //}
+                    //else if (y < radius) // Top band
+                    //    alpha = y * alphaRatio;
+                    //else if (y >= (height - 1 - radius)) // Bottom band
+                    //    alpha = (height - y) * alphaRatio;
+                    //else if (y >= increaseValue && y <= (height - increaseValue - YOffset - 1)) // crop the center
+                    //{
+                    //    if (x >= increaseValue && x <= (width - increaseValue - XOffset - 1))
+                    //        alpha = 255;
+                    //    else
+                    //        isCorner = false;
+                    //}
+
+                    if (x % width < radius) //left                  
+                        isCorner = true;
                     else if (x % width >= width - radius) //right
-                    {
-                        if (y < (width - x)) // Top right band
-                            alpha = Convert.ToByte(y * alphaRatio);
-                        else if ((height - y) < (width - x)) // Bottom right band
-                            alpha = Convert.ToByte((height - y) * alphaRatio);
-                        else
-                            alpha = Convert.ToByte((width - x) * alphaRatio);
-                    }
+                        isCorner = true;
                     else if (y < radius) // Top band
-                        alpha = Convert.ToByte(y * alphaRatio);
+                        isCorner = true;
                     else if (y >= (height - 1 - radius)) // Bottom band
-                        alpha = Convert.ToByte((height - y) * alphaRatio);
+                        isCorner = true;
                     else if (y >= increaseValue && y <= (height - increaseValue - YOffset - 1)) // crop the center
                     {
                         if (x >= increaseValue && x <= (width - increaseValue - XOffset - 1))
-                            alpha = 255;
+                            isCorner = true;
                         else
                             isCorner = false;
                     }

@@ -17,8 +17,9 @@ namespace Zebble
             shadow.Color = color;
             item.ZIndex = 1;
             shadow.ZIndex = 0;
+
             Nav.CurrentPage.Add(shadow);
-            //  item.Parent.AddBefore(item, shadow);
+          //  item.Parent.AddBefore(item, shadow);
         }
     }
 }
