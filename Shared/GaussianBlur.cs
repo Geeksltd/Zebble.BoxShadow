@@ -67,13 +67,14 @@ namespace Zebble.Plugin
                 {
                     var isTransparent = false;
                     int i = y * width + x;
-                  //  var index = i * bitsPerPixel;
+                    //  var index = i * bitsPerPixel;
 
-                    if (y <= yOffset)
-                        isTransparent = true;
-                    else if (x <= xOffset)
-                        isTransparent = true;
-                    else if (y >= cutValue && y <= (height - cutValue - yOffset - 1))
+                    //if (y <= yOffset)
+                    //    isTransparent = true;
+                    //else if (x <= xOffset)
+                    //    isTransparent = true;
+                    //else 
+                    if (y >= cutValue && y <= (height - cutValue - yOffset - 1))
                     {
                         if (x >= cutValue && x <= (width - cutValue - xOffset - 1))
                             isTransparent = true;
