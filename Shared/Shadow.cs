@@ -10,11 +10,7 @@
     {
         View Owner;
 
-        public Shadow()
-        {
-            Absolute = true;
-            Nav.CurrentPage.Add(this);
-        }
+        public Shadow() => Absolute = true;
         public View For
         {
             get => Owner;
@@ -33,14 +29,6 @@
         public int SpreadRadius { get; set; } = 0; //{ get; set {  Owner.X.Set( value); Owner.Y.Set(value); } } = 0;
         public int BlurRadius { get; set; } = 10;
 
-        public void SetSpreadRadius(int value)
-        {
-            X.Set(X.CurrentValue + value / 2);
-            Y.Set(Y.CurrentValue + value / 2);
-            Height.Set(Owner.Height.CurrentValue + value);
-            Width.Set(Owner.Width.CurrentValue + value);
-            SpreadRadius = value;
-        }
         public override async Task OnPreRender()
         {
             await base.OnPreRender();
@@ -48,24 +36,18 @@
             if (Owner == null) throw new Exception("'For' should be specified for a Shadow.");
 
             // Attach to the owner:
-            SyncWithOwner();
-            Owner.X.Changed.HandleWith(SyncWithOwner);
-            Owner.Y.Changed.HandleWith(SyncWithOwner);
+            await SyncWithOwner();
+            Owner.X.Changed.Handle(SyncWithOwner);
+            Owner.Y.Changed.Handle(SyncWithOwner);
+
             // Owner.OpacityChanged.Handle(SyncWithOwner);
             // Owner.VisibleChanged.Handle(SyncWithOwner);
             //BackgroundImageStretch = Stretch.Fill;
 
-
-
-            // TODO: Upon removal of the owner, remove this too. Also set its visibility
-
-            var image = GetImagePath();
-            //if (!await image.SyncExists())
-            await CreateImageFile(image);
-            Path = image.FullName;
+            // TODO: Upon removal of the owner, remove this too. Also set its visibility          
         }
 
-        void SyncWithOwner()
+        async Task SyncWithOwner()
         {
             var increaseValue = BlurRadius + SpreadRadius * 2;
             Absolute = true;
@@ -81,10 +63,15 @@
 
             Visible = Owner.Visible;
             Opacity = Owner.Opacity;
+
+            var image = GetImagePath();
+            if (!await image.SyncExists())
+                await CreateImageFile(image);
+            Path = image.FullName;
         }
         FileInfo GetImagePath()
         {
-            var name = new object[] { Owner.Width, Owner.Height, Color, SpreadRadius, BlurRadius }
+            var name = new object[] { Owner.Width.CurrentValue, Owner.Height.CurrentValue, Color, SpreadRadius, BlurRadius }
              .ToString("|").ToIOSafeHash();
 
             return Device.IO.Cache.GetFile(name + ".png");
