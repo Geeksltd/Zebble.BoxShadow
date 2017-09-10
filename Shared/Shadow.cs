@@ -10,11 +10,7 @@
     {
         View Owner;
 
-        public Shadow()
-        {
-            Absolute = true;
-            //  Nav.CurrentPage.Add(this);
-        }
+        public Shadow() => Absolute = true;//  Nav.CurrentPage.Add(this);//   #if UWP//  #endif
         public View For
         {
             get => Owner;
@@ -33,8 +29,10 @@
         public int SpreadRadius { get; set; } = 0; //{ get; set {  Owner.X.Set( value); Owner.Y.Set(value); } } = 0;
         public int BlurRadius { get; set; } = 10;
 
+
         public override async Task OnPreRender()
         {
+
             await base.OnPreRender();
 
             if (Owner == null) throw new Exception("'For' should be specified for a Shadow.");
@@ -47,22 +45,20 @@
             Owner.Height.Changed.Handle(SyncWithOwner);
             Owner.Width.Changed.Handle(SyncWithOwner);
 
+            //Owner.Native().
             Owner.VisibilityChanged.Handle(SyncWithOwner);
-            Stretch = Stretch.Fill;
-
-            // TODO: Upon removal of the owner, remove this too. Also set its visibility          
+            // Stretch = Stretch.Fill;
         }
+
 
         async Task SyncWithOwner()
         {
             var increaseValue = BlurRadius + SpreadRadius * 2;
 
-           
-            X.Set(  Owner.CalculateAbsoluteX() - increaseValue / 2);
+
+            X.Set(Owner.CalculateAbsoluteX() - increaseValue / 2);
             Y.Set(Owner.CalculateAbsoluteY() - increaseValue / 2);
 
-            //  Height.Set(Owner.Height.CurrentValue + (BlurRadius * 2) + (SpreadRadius * 2));
-            //  Width.Set(Owner.Width.CurrentValue + (BlurRadius * 2) + (SpreadRadius * 2));
             Height.Set(Owner.Height.CurrentValue + increaseValue + YOffset);
             Width.Set(Owner.Width.CurrentValue + increaseValue + XOffset);
 
@@ -75,7 +71,8 @@
                 var image = GetImagePath();
                 if (!await image.SyncExists())
                     await CreateImageFile(image);
-                Path = image.FullName;
+                BackgroundImagePath = image.FullName;
+
             }
         }
         FileInfo GetImagePath()

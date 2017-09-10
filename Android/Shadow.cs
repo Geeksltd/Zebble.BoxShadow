@@ -11,6 +11,7 @@ namespace Zebble
     {
         public async static Task SaveAsPng(FileInfo target, int width, int height, Color[] colors)
         {
+            
             //if (pixels.Length != imageWidth * imageHeight)
             //    throw new Exception($"For a {imageWidth}X{imageHeight} image, an array of {imageWidth * imageHeight}" + " colors is expected.");
 
