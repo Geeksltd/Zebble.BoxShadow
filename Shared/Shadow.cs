@@ -66,12 +66,22 @@
             Visible = Owner.Visible;
             Opacity = Owner.Opacity;
 
-            if (Visible)
+            try
             {
-                var image = GetImagePath();
-                if (!await image.SyncExists())
-                    await CreateImageFile(image);
-                BackgroundImagePath = image.FullName;
+                if (Visible)
+                {
+                    var target = GetImagePath();
+
+                    if (!await target.SyncExists())
+                    {
+                        target.Create().Dispose();
+                        await CreateImageFile(target);
+                    }
+                    BackgroundImagePath = target.FullName;
+                }
+            }
+            catch (Exception ex)
+            {
 
             }
         }
@@ -103,37 +113,6 @@
                 {
                     var isCorner = true;
                     int i = y * width + x;
-                    // int alpha = width / 2 - Math.Abs(width / 2 - x);
-
-                    //if (x % width < radius) //left
-                    //{
-                    //    if (y < x) // Top left band
-                    //        alpha = y * alphaRatio;
-                    //    else if ((height - y) < x) // bottom left band
-                    //        alpha = (height - y) * alphaRatio;
-                    //    else
-                    //        alpha = x * alphaRatio;
-                    //}
-                    //else if (x % width >= width - radius) //right
-                    //{
-                    //    if (y < (width - x)) // Top right band
-                    //        alpha = y * alphaRatio;
-                    //    else if ((height - y) < (width - x)) // Bottom right band
-                    //        alpha = (height - y) * alphaRatio;
-                    //    else
-                    //        alpha = (width - x) * alphaRatio;
-                    //}
-                    //else if (y < radius) // Top band
-                    //    alpha = y * alphaRatio;
-                    //else if (y >= (height - 1 - radius)) // Bottom band
-                    //    alpha = (height - y) * alphaRatio;
-                    //else if (y >= increaseValue && y <= (height - increaseValue - YOffset - 1)) // crop the center
-                    //{
-                    //    if (x >= increaseValue && x <= (width - increaseValue - XOffset - 1))
-                    //        alpha = 255;
-                    //    else
-                    //        isCorner = false;
-                    //}
 
                     if (x % width < radius) //left                  
                         isCorner = true;

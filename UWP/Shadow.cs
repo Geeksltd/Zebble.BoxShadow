@@ -11,22 +11,10 @@ using Windows.UI.Xaml;
 
 namespace Zebble
 {
-    public partial class Shadow 
+    public partial class Shadow
     {
-        //public void test()
-        //{
-        //    // UIElement uIElement = this as UIElement;
-        //    var native = View.Root.Native(); if (native == null) return;
-        //    Device.UIThread.Run(() =>
-        //   {
-        //       UIElement uiElement = (Windows.UI.Xaml.UIElement)native;
-        //       uiElement.IsHitTestVisible = true;
-        //   });
-
-        //}
         public async static Task SaveAsPng(FileInfo target, int width, int height, Color[] colors)
         {
-
             //if (pixels.Length != imageWidth * imageHeight)
             //    throw new Exception($"For a {imageWidth}X{imageHeight} image, an array of {imageWidth * imageHeight}" + " colors is expected.");
             await Device.UIThread.Run(async () =>
@@ -55,7 +43,7 @@ namespace Zebble
                 }
                 // Then encode and save the bitmap as a PNG file.
 
-                target.Create().Dispose();
+               // target.Create().Dispose();
                 StorageFile destFile = await target.ToStorageFile();
                 using (IRandomAccessStream stream = await destFile.OpenAsync(FileAccessMode.ReadWrite))     //   using (IRandomAccessStream stream = target.Create().AsRandomAccessStream())
                 {

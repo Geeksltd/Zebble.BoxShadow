@@ -10,7 +10,7 @@ namespace Zebble
         public static void Shadow(this View item, int xOffset, int yOffset, int blurRadius, int spreadRadius, Color color)
         {
             var id = $"{item.Id}ShadowBox";
-            if (!Nav.CurrentPage.Parent.AllChildren.Any(rec => rec.Id == id))
+            if (!Nav.CurrentPage.AllChildren.Any(rec => rec.Id == id))
             {
                 Shadow shadow = new Shadow();
                 shadow.For = item;
@@ -22,7 +22,7 @@ namespace Zebble
                 item.ZIndex = 1;
                 shadow.ZIndex = 0;
                 shadow.Id = id;
-              //  Nav.CurrentPage.AddAfter(shadow);
+                //  Nav.CurrentPage.AddAfter(shadow);
                 Nav.CurrentPage.Add(shadow);
             }
         }
