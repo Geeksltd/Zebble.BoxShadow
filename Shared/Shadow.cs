@@ -29,6 +29,8 @@
         public int SpreadRadius { get; set; } = 0; //{ get; set {  Owner.X.Set( value); Owner.Y.Set(value); } } = 0;
         public int BlurRadius { get; set; } = 10;
 
+        bool isRunning = false;
+
 
         public override async Task OnPreRender()
         {
@@ -48,20 +50,42 @@
             //Owner.Native().
             Owner.VisibilityChanged.Handle(SyncWithOwner);
             // Stretch = Stretch.Fill;
+
+
         }
 
+        public override async Task OnInitialized()
+        {
+            await WhenShown(() =>
+            {
+#if UWP
+                Device.UIThread.Run(() =>
+                {
+                    var native = this.Native();
+                    native.IsHitTestVisible = false;
+
+                });
+#endif
+            });
+        }
 
         async Task SyncWithOwner()
         {
             var increaseValue = BlurRadius + SpreadRadius * 2;
-
-
+            var height = Height.CurrentValue;
+            var width = Width.CurrentValue;
             X.Set(Owner.CalculateAbsoluteX() - increaseValue / 2);
             Y.Set(Owner.CalculateAbsoluteY() - increaseValue / 2);
 
             Height.Set(Owner.Height.CurrentValue + increaseValue + YOffset);
             Width.Set(Owner.Width.CurrentValue + increaseValue + XOffset);
 
+            if (isRunning && (Math.Abs(height - Height.CurrentValue) > 2 || Math.Abs(width - Width.CurrentValue) > 2))
+                await IsEnd();
+            else if (isRunning)
+                return;
+
+            isRunning = true;
 
             Visible = Owner.Visible;
             Opacity = Owner.Opacity;
@@ -76,15 +100,21 @@
                     {
                         target.Create().Dispose();
                         await CreateImageFile(target);
+                        //await CreateCircle(target);
                     }
                     BackgroundImagePath = target.FullName;
                 }
             }
-            catch (Exception ex)
-            {
-
-            }
+            catch { }
+            isRunning = false;
         }
+
+        async Task IsEnd()
+        {
+            while (isRunning)
+                await Task.Delay(25);
+        }
+
         FileInfo GetImagePath()
         {
             var name = new object[] { Owner.Width.CurrentValue, Owner.Height.CurrentValue, Color, SpreadRadius, BlurRadius }
@@ -140,6 +170,19 @@
 
             // Blur it           
             colors = GaussianBlur.Blur(colors, width, height, BlurRadius, increaseValue, XOffset, YOffset);
+
+            await SaveAsPng(savePath, width, height, colors);
+        }
+
+        async Task CreateCircle(FileInfo savePath)
+        {
+            var increaseValue = BlurRadius + SpreadRadius * 2;
+            var height = (int)Height.CurrentValue;
+            var width = (int)Width.CurrentValue;
+            int x = height / 2, y = height / 2, r = 50;
+
+            var length = height * width;
+            Color[] colors = Enumerable.Repeat(Colors.Transparent, length).ToArray(); ;// new Color[length];
 
             await SaveAsPng(savePath, width, height, colors);
         }
