@@ -6,9 +6,9 @@
     <title>Shadow for Zebble (Xamarin)</title>
     <projectUrl>https://github.com/Geeksltd/Zebble.Shadow</projectUrl>
     <iconUrl>https://raw.githubusercontent.com/Geeksltd/Zebble.Shadow/master/Shared/NuGet/Icon.png</iconUrl>
-    <copyright>Copyright ©2017 Mobile App Technologies Ltd - All rights reserved.</copyright>
+    <copyright>Copyright ©2017 Geeks Ltd - All rights reserved.</copyright>
     <description></description>
-    <authors>Mobile App Technologies Ltd</authors>
+    <authors>Geeks Ltd</authors>
     <dependencies>
     </dependencies>
   </metadata>
