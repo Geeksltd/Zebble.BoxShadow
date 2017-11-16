@@ -18,13 +18,7 @@
         {
             get
             {
-                if (!Id.HasValue())
-                {
-                    if (Owner.Id.HasValue()) Id = $"{Owner.Id}BoxShadow";
-                    else Id = $"{new object[] { Owner.ActualX, Owner.ActualY }}BoxShadow";
-                }
-
-                var name = Id.ToIOSafeHash();
+                var name = new object[] { Owner.ActualX, Owner.ActualY, Owner.Border, Owner.Width, Owner.Height }.ToString("|").ToIOSafeHash();
                 return Device.IO.GetTempRoot().GetFile($"{name}.png");
             }
         }
@@ -173,10 +167,10 @@
 
             if (new float[] { Owner.Border.RadiusBottomLeft, Owner.Border.RadiusBottomRight, Owner.Border.RadiusTopLeft, Owner.Border.RadiusTopRight }.Sum() != 0)
             {
-                await DrawCustomArc(colors, increaseValue, width, 0, TOP_LEFT);
-                await DrawCustomArc(colors, increaseValue, width, 0, TOP_RIGHT);
-                await DrawCustomArc(colors, increaseValue, width, height, BOTTOM_RIGHT);
-                await DrawCustomArc(colors, increaseValue, width, height, BOTTOM_LEFT);
+                await DrawCustomArc(colors, increaseValue + (int)Owner.Border.RadiusTopLeft, width, 0, TOP_LEFT);
+                await DrawCustomArc(colors, increaseValue + (int)Owner.Border.RadiusTopRight, width, 0, TOP_RIGHT);
+                await DrawCustomArc(colors, increaseValue + (int)Owner.Border.RadiusBottomRight, width, height, BOTTOM_RIGHT);
+                await DrawCustomArc(colors, increaseValue + (int)Owner.Border.RadiusBottomLeft, width, height, BOTTOM_LEFT);
             }
 
             colors = GaussianBlur.Blur(colors, width, height, BlurRadius);
@@ -191,19 +185,43 @@
             {
                 case 0:
                     //LeftTop
-                    resutl = new Rec { StartX = SHADOW_MARGIN, EndX = increaseValue + SHADOW_MARGIN, StartY = SHADOW_MARGIN, EndY = increaseValue + SHADOW_MARGIN };
+                    resutl = new Rec
+                    {
+                        StartX = SHADOW_MARGIN,
+                        EndX = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft,
+                        StartY = SHADOW_MARGIN,
+                        EndY = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft
+                    };
                     break;
                 case 1:
                     //RightTop
-                    resutl = new Rec { StartX = (width - SHADOW_MARGIN) - increaseValue, EndX = width, StartY = SHADOW_MARGIN, EndY = increaseValue + SHADOW_MARGIN };
+                    resutl = new Rec
+                    {
+                        StartX = (width - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusTopRight,
+                        EndX = width,
+                        StartY = SHADOW_MARGIN,
+                        EndY = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopRight
+                    };
                     break;
                 case 2:
                     //LeftBottom
-                    resutl = new Rec { StartX = SHADOW_MARGIN, EndX = increaseValue + SHADOW_MARGIN, StartY = (height - SHADOW_MARGIN) - increaseValue, EndY = height - SHADOW_MARGIN };
+                    resutl = new Rec
+                    {
+                        StartX = SHADOW_MARGIN,
+                        EndX = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusBottomLeft,
+                        StartY = (height - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusBottomLeft,
+                        EndY = height - SHADOW_MARGIN
+                    };
                     break;
                 case 3:
                     //RightBottom
-                    resutl = new Rec { StartX = (width - SHADOW_MARGIN) - increaseValue, EndX = width - SHADOW_MARGIN, StartY = (height - SHADOW_MARGIN) - increaseValue, EndY = height - SHADOW_MARGIN };
+                    resutl = new Rec
+                    {
+                        StartX = (width - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusBottomRight,
+                        EndX = width - SHADOW_MARGIN,
+                        StartY = (height - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusBottomRight,
+                        EndY = height - SHADOW_MARGIN
+                    };
                     break;
                 default: break;
             }
@@ -234,31 +252,32 @@
 
             var cornerAdjustingValue = SHADOW_MARGIN * 2 + radius;
             int xPos = 0, yPos = 0;
+            double circles = 1;
             for (int j = 1; j < stroke; j++)
             {
-                radius += 1;
+                circles = j + 1;
                 for (var i = 0.0; i < FULL_CIRCLE_DEGREE; i += 0.1)
                 {
                     var angle = i * Math.PI / HALF_CIRCLE_DEGREE;
                     switch (cornerPosition)
                     {
                         case TOP_LEFT:
-                            xPos = (int)(cornerAdjustingValue + radius * Math.Cos(angle));
-                            yPos = (int)(cornerAdjustingValue + radius * Math.Sin(angle));
+                            xPos = (int)(cornerAdjustingValue + circles * Math.Cos(angle));
+                            yPos = (int)(cornerAdjustingValue + circles * Math.Sin(angle));
                             break;
                         case TOP_RIGHT:
                             var xPosLineLen = width - cornerAdjustingValue;
-                            xPos = (int)(xPosLineLen + radius * Math.Cos(angle));
-                            yPos = (int)(YOffset + cornerAdjustingValue + radius * Math.Sin(angle));
+                            xPos = (int)(xPosLineLen + circles * Math.Cos(angle));
+                            yPos = (int)(YOffset + cornerAdjustingValue + circles * Math.Sin(angle));
                             break;
                         case BOTTOM_RIGHT:
-                            xPos = (int)(Math.Abs(width - cornerAdjustingValue + 2) + radius * Math.Cos(angle));
-                            yPos = (int)(Math.Abs(height - cornerAdjustingValue + 2) + radius * Math.Sin(angle));
+                            xPos = (int)(Math.Abs(width - cornerAdjustingValue + 1) + circles * Math.Cos(angle));
+                            yPos = (int)(Math.Abs(height - cornerAdjustingValue + 1) + circles * Math.Sin(angle));
                             break;
                         default:
                             var yPosLineLen = height - cornerAdjustingValue;
-                            xPos = (int)(cornerAdjustingValue + radius * Math.Cos(angle));
-                            yPos = (int)(yPosLineLen + radius * Math.Sin(angle));
+                            xPos = (int)(cornerAdjustingValue + circles * Math.Cos(angle));
+                            yPos = (int)(yPosLineLen + circles * Math.Sin(angle));
                             break;
                     }
 

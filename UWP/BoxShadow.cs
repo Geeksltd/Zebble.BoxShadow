@@ -36,6 +36,7 @@
                 }
 
                 await CurrentFile.WriteAllBytesAsync(await destFile.ReadAllBytes());
+                await destFile.DeleteAsync();
                 return CurrentFile;
             });
         }
