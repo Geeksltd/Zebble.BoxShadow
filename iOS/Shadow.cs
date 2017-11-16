@@ -14,15 +14,15 @@
         {
             var byteArray = new byte[imageWidth * imageHeight * 4];
 
-            for (int i = 0; i < colors.Length; i += 4)
+            for (var i = 0; i < colors.Length; i++)
             {
-                var pixelNumber = i / 4;
-                var color = colors[pixelNumber];
+                var color = colors[i];
+                var bytePosition = i * 4;
 
-                byteArray[i] = color.Red;
-                byteArray[i + 1] = color.Green;
-                byteArray[i + 2] = color.Blue;
-                byteArray[i + 3] = color.Alpha;
+                byteArray[bytePosition] = color.Red;
+                byteArray[bytePosition + 1] = color.Green;
+                byteArray[bytePosition + 2] = color.Blue;
+                byteArray[bytePosition + 3] = color.Alpha;
             }
 
             await Device.UIThread.Run(() =>
