@@ -5,7 +5,7 @@
     using System.Linq;
     using System.Threading.Tasks;
 
-    public partial class Shadow : ImageView
+    public partial class BoxShadow : ImageView
     {
         const int SHADOW_MARGIN = 10;
         const int TOP_LEFT = 0, TOP_RIGHT = 1, BOTTOM_RIGHT = 2, BOTTOM_LEFT = 3;
@@ -13,9 +13,23 @@
 
         View Owner;
         bool IsRunning = false;
-        DateTime currentTime;
 
-        public Shadow() => Absolute = true;
+        FileInfo CurrentFile
+        {
+            get
+            {
+                if (!Id.HasValue())
+                {
+                    if (Owner.Id.HasValue()) Id = $"{Owner.Id}BoxShadow";
+                    else Id = $"{new object[] { Owner.ActualX, Owner.ActualY }}BoxShadow";
+                }
+
+                var name = Id.ToIOSafeHash();
+                return Device.IO.GetTempRoot().GetFile($"{name}.png");
+            }
+        }
+
+        public BoxShadow() => Absolute = true;
         public View For
         {
             get => Owner;
@@ -105,15 +119,7 @@
             {
                 if (Visible)
                 {
-                    var target = GetImagePath();
-
-                    if (!await target.SyncExists())
-                    {
-                        target.Create().Dispose();
-                        currentTime = LocalTime.Now;
-                        await CreateImageFile(target);
-                        Device.Log.Warning(LocalTime.Now.Subtract(currentTime).TotalSeconds);
-                    }
+                    var target = await CreateImageFile();
                     BackgroundImagePath = target.FullName;
                 }
             }
@@ -127,16 +133,10 @@
                 await Task.Delay(25);
         }
 
-        FileInfo GetImagePath()
+        async Task<FileInfo> CreateImageFile()
         {
-            var name = new object[] { Owner.Width.CurrentValue, Owner.Height.CurrentValue, Color, BlurRadius }
-             .ToString("|").ToIOSafeHash();
+            if (CurrentFile.Exists) return CurrentFile;
 
-            return Device.IO.Cache.GetFile(name + ".png");
-        }
-
-        async Task CreateImageFile(FileInfo savePath)
-        {
             var increaseValue = BlurRadius * 2;
 
             var height = (int)Height.CurrentValue;
@@ -181,7 +181,7 @@
 
             colors = GaussianBlur.Blur(colors, width, height, BlurRadius);
 
-            await SaveAsPng(savePath, width, height, colors);
+            return await SaveAsPng(width, height, colors);
         }
 
         Task<Rec> GetCorner(int increaseValue, int width, int height, int corner)
@@ -215,14 +215,22 @@
         {
             double radius;
 
-            if (cornerPosition == TOP_LEFT) radius = Owner.Border.RadiusTopLeft;
-            else if (cornerPosition == TOP_RIGHT) radius = Owner.Border.RadiusTopRight;
-            else if (cornerPosition == BOTTOM_RIGHT)
+            switch (cornerPosition)
             {
-                radius = Owner.Border.RadiusBottomRight;
-                stroke -= 1;
+                case TOP_LEFT:
+                    radius = Owner.Border.RadiusTopLeft;
+                    break;
+                case TOP_RIGHT:
+                    radius = Owner.Border.RadiusTopRight;
+                    break;
+                case BOTTOM_RIGHT:
+                    radius = Owner.Border.RadiusBottomRight;
+                    stroke -= 1;
+                    break;
+                default:
+                    radius = Owner.Border.RadiusBottomLeft;
+                    break;
             }
-            else radius = Owner.Border.RadiusBottomLeft;
 
             var cornerAdjustingValue = SHADOW_MARGIN * 2 + radius;
             int xPos = 0, yPos = 0;

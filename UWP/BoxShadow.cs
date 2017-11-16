@@ -9,31 +9,20 @@
     using Windows.Storage;
     using System.Runtime.InteropServices.WindowsRuntime;
 
-    public partial class Shadow
+    public partial class BoxShadow
     {
-        public async Task SaveAsPng(FileInfo target, int width, int height, Color[] colors)
+        public async Task<FileInfo> SaveAsPng(int width, int height, Color[] colors)
         {
-            await Device.UIThread.Run(async () =>
+            return await Device.UIThread.Run(async () =>
             {
                 var bitmap = new WriteableBitmap(width, height);
 
-                const int bitsPerPixel = 4;
-                var imageArray = new byte[width * height * bitsPerPixel];
-
-                for (int i = 0; i < imageArray.Length; i += 4)
-                {
-                    var pixelNumber = i / bitsPerPixel;
-                    var color = colors[pixelNumber].Render();
-
-                    imageArray[i] = color.R;
-                    imageArray[i + 1] = color.G;
-                    imageArray[i + 2] = color.B;
-                    imageArray[i + 3] = color.A;
-                }
+                var imageArray = colors.ToByteArray(width, height);
 
                 using (Stream stream = bitmap.PixelBuffer.AsStream()) await stream.WriteAsync(imageArray, 0, imageArray.Length);
 
-                var destFile = await target.ToStorageFile();
+                var destFile = await ApplicationData.Current.TemporaryFolder.CreateFileAsync(CurrentFile.Name);
+                 
                 using (IRandomAccessStream stream = await destFile.OpenAsync(FileAccessMode.ReadWrite))
                 {
                     var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
@@ -45,6 +34,9 @@
                                 (uint)bitmap.PixelWidth, (uint)bitmap.PixelHeight, 96.0, 96.0, pixelsArray);
                     await encoder.FlushAsync();
                 }
+
+                await CurrentFile.WriteAllBytesAsync(await destFile.ReadAllBytes());
+                return CurrentFile;
             });
         }
     }

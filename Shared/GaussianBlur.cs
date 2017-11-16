@@ -139,6 +139,7 @@
                 }
             }
         }
+
         static void BoxBlurT(byte[] scl, byte[] tcl, int width, int height, double radius)
         {
             var iarr = 1 / (radius + radius + 1);

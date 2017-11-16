@@ -37,7 +37,7 @@
     },
     {
       "Analyzer": "UnusedMethodsAnalyzer",
-      "OccurrenceCount": 7,
+      "OccurrenceCount": 110,
       "Exceptions": null,
       "SentToServer": true,
       "InstallationName": "DESKTOP-LLCTIMB"
@@ -59,6 +59,13 @@
     {
       "Analyzer": "BooleanParameterAnalyzer",
       "OccurrenceCount": 1,
+      "Exceptions": null,
+      "SentToServer": true,
+      "InstallationName": "DESKTOP-LLCTIMB"
+    },
+    {
+      "Analyzer": "PropertyToExpressionAnalyzer",
+      "OccurrenceCount": 4,
       "Exceptions": null,
       "SentToServer": true,
       "InstallationName": "DESKTOP-LLCTIMB"

@@ -17,7 +17,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)GaussianBlur.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Shadow.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ShadowExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BoxShadow.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BoxShadowExtensions.cs" />
   </ItemGroup>
 </Project>

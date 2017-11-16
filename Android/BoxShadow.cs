@@ -5,9 +5,9 @@
     using Android.Graphics;
     using System.IO;
 
-    public partial class Shadow
+    public partial class BoxShadow
     {
-        public async Task SaveAsPng(FileInfo target, int width, int height, Color[] colors)
+        public async Task<FileInfo> SaveAsPng(int width, int height, Color[] colors)
         {
             var bitmap = Bitmap.CreateBitmap(width, height, Bitmap.Config.Argb8888);
             
@@ -21,7 +21,7 @@
             var stream = new MemoryStream();
             bitmap.Compress(Bitmap.CompressFormat.Png, 0, stream);
 
-            using (var filestream = new FileStream(target.FullName, FileMode.OpenOrCreate))
+            using (var filestream = CurrentFile.OpenWrite())
             {
                 if (bitmap.Compress(Bitmap.CompressFormat.Png, 0, filestream))
                 {
@@ -32,6 +32,8 @@
 
             bitmap.Recycle();
             bitmap.Dispose();
+
+            return CurrentFile;
         }
     }
 }

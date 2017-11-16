@@ -3,48 +3,38 @@
     using System.IO;
     using System.Threading.Tasks;
     using UIKit;
-    using Foundation;
-    using System;
     using CoreGraphics;
-    using System.Linq;
+    using System;
 
-    public partial class Shadow
+    public partial class BoxShadow
     {
-        public async Task SaveAsPng(FileInfo target, int imageWidth, int imageHeight, Color[] colors)
+        public async Task<FileInfo> SaveAsPng(int imageWidth, int imageHeight, Color[] colors)
         {
-            var byteArray = new byte[imageWidth * imageHeight * 4];
+            var byteArray = colors.ToByteArray(imageWidth, imageHeight);
 
-            for (var i = 0; i < colors.Length; i++)
+            return await Device.UIThread.Run(async () =>
             {
-                var color = colors[i];
-                var bytePosition = i * 4;
-
-                byteArray[bytePosition] = color.Red;
-                byteArray[bytePosition + 1] = color.Green;
-                byteArray[bytePosition + 2] = color.Blue;
-                byteArray[bytePosition + 3] = color.Alpha;
-            }
-
-            await Device.UIThread.Run(() =>
-            {
-                NSError err = null;
                 var image = ConvertBitmapRGBA8ToUIImage(byteArray, imageWidth, imageHeight);
-                var imageData = image.AsPNG();
-                if (imageData == null || !imageData.Save(target.FullName, auxiliaryFile: true, error: out err))
+                using (var imageData = image.AsPNG())
                 {
-                    Device.Log.Error("file not saved as " + target.FullName);
-                    Device.Log.Error(err);
+                    var myByteArray = new byte[imageData.Length];
+                    System.Runtime.InteropServices.Marshal.Copy(imageData.Bytes, myByteArray, 0,
+                        Convert.ToInt32(imageData.Length));
+
+                    await CurrentFile.WriteAllBytesAsync(myByteArray);
+
+                    return CurrentFile;
                 }
             });
         }
 
-        public static UIImage ConvertBitmapRGBA8ToUIImage(byte[] buffer, int width, int height)
+        UIImage ConvertBitmapRGBA8ToUIImage(byte[] buffer, int width, int height)
         {
             using (var provider = new CGDataProvider(buffer, 0, buffer.Length))
             {
-                int bitsPerComponent = 8;
-                int bitsPerPixel = 32;
-                int bytesPerRow = 4 * width;
+                const int bitsPerComponent = 8;
+                const int bitsPerPixel = 32;
+                var bytesPerRow = 4 * width;
 
                 var colorSpaceRef = CGColorSpace.CreateDeviceRGB();
 

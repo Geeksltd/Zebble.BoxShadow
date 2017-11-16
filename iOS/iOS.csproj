@@ -9,7 +9,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Zebble</RootNamespace>
     <IPhoneResourcePrefix>Resources</IPhoneResourcePrefix>
-    <AssemblyName>Zebble.Shadow.iOS</AssemblyName>
+    <AssemblyName>Zebble.BoxShadow.iOS</AssemblyName>
     <OutputPath>..\lib\</OutputPath>
     <DefineConstants>__UNIFIED__;__MOBILE__;__IOS__;IOS;</DefineConstants>
   </PropertyGroup>
@@ -22,7 +22,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
-    <DocumentationFile>..\lib\Zebble.Shadow.iOS.xml</DocumentationFile>
+    <DocumentationFile>..\lib\Zebble.BoxShadow.iOS.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>full</DebugType>
@@ -53,7 +53,7 @@
     <Content Include="Zebble-LicenseAgreement.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Shadow.cs" />
+    <Compile Include="BoxShadow.cs" />
   </ItemGroup>
   <Import Project="..\Shared\Shared.projitems" Label="Shared" Condition="Exists('..\Shared\Shared.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
