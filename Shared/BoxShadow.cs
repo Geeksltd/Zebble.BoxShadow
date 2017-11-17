@@ -13,12 +13,15 @@
 
         View Owner;
         bool IsRunning = false;
+        int IncreaseValue;
+
 
         FileInfo CurrentFile
         {
             get
             {
-                var name = new object[] { Owner.ActualX, Owner.ActualY, Owner.Border, Owner.Width, Owner.Height }.ToString("|").ToIOSafeHash();
+                var name = new object[] { Owner.ActualX, Owner.ActualY, Owner.Border.RadiusBottomLeft, Owner.Border.RadiusBottomRight,
+                    Owner.Border.RadiusTopLeft, Owner.Border.RadiusTopRight, Owner.Width, Owner.Height,BlurRadius,XOffset,YOffset }.ToString("|").ToIOSafeHash();
                 return Device.IO.GetTempRoot().GetFile($"{name}.png");
             }
         }
@@ -131,7 +134,7 @@
         {
             if (CurrentFile.Exists) return CurrentFile;
 
-            var increaseValue = BlurRadius * 2;
+            IncreaseValue = BlurRadius * 2;
 
             var height = (int)Height.CurrentValue;
             var width = (int)Width.CurrentValue;
@@ -139,10 +142,10 @@
             var length = height * width;
             var colors = Enumerable.Repeat(Colors.Transparent, length).ToArray();
 
-            var topLeft = await GetCorner(increaseValue, width, height, TOP_LEFT);
-            var topRight = await GetCorner(increaseValue, width, height, TOP_RIGHT);
-            var bottomLeft = await GetCorner(increaseValue, width, height, BOTTOM_RIGHT);
-            var bottomRight = await GetCorner(increaseValue, width, height, BOTTOM_LEFT);
+            var topLeft = await GetCorner(IncreaseValue, width, height, TOP_LEFT);
+            var topRight = await GetCorner(IncreaseValue, width, height, TOP_RIGHT);
+            var bottomLeft = await GetCorner(IncreaseValue, width, height, BOTTOM_RIGHT);
+            var bottomRight = await GetCorner(IncreaseValue, width, height, BOTTOM_LEFT);
 
             for (var y = SHADOW_MARGIN; y < height - SHADOW_MARGIN; y++)
                 for (var x = SHADOW_MARGIN; x < width - SHADOW_MARGIN; x++)
@@ -165,13 +168,7 @@
                         colors[index] = Color;
                 }
 
-            if (new float[] { Owner.Border.RadiusBottomLeft, Owner.Border.RadiusBottomRight, Owner.Border.RadiusTopLeft, Owner.Border.RadiusTopRight }.Sum() != 0)
-            {
-                await DrawCustomArc(colors, increaseValue + (int)Owner.Border.RadiusTopLeft, width, 0, TOP_LEFT);
-                await DrawCustomArc(colors, increaseValue + (int)Owner.Border.RadiusTopRight, width, 0, TOP_RIGHT);
-                await DrawCustomArc(colors, increaseValue + (int)Owner.Border.RadiusBottomRight, width, height, BOTTOM_RIGHT);
-                await DrawCustomArc(colors, increaseValue + (int)Owner.Border.RadiusBottomLeft, width, height, BOTTOM_LEFT);
-            }
+            await DrawCorners(colors, width, height);
 
             colors = GaussianBlur.Blur(colors, width, height, BlurRadius);
 
@@ -188,19 +185,19 @@
                     resutl = new Rec
                     {
                         StartX = SHADOW_MARGIN,
-                        EndX = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft,
+                        EndX = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft / 2,
                         StartY = SHADOW_MARGIN,
-                        EndY = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft
+                        EndY = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft / 2
                     };
                     break;
                 case 1:
                     //RightTop
                     resutl = new Rec
                     {
-                        StartX = (width - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusTopRight,
+                        StartX = (width - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusTopRight / 2,
                         EndX = width,
                         StartY = SHADOW_MARGIN,
-                        EndY = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopRight
+                        EndY = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopRight / 2
                     };
                     break;
                 case 2:
@@ -208,8 +205,8 @@
                     resutl = new Rec
                     {
                         StartX = SHADOW_MARGIN,
-                        EndX = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusBottomLeft,
-                        StartY = (height - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusBottomLeft,
+                        EndX = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusBottomLeft / 2,
+                        StartY = (height - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusBottomLeft / 2,
                         EndY = height - SHADOW_MARGIN
                     };
                     break;
@@ -217,9 +214,9 @@
                     //RightBottom
                     resutl = new Rec
                     {
-                        StartX = (width - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusBottomRight,
+                        StartX = (width - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusBottomRight / 2,
                         EndX = width - SHADOW_MARGIN,
-                        StartY = (height - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusBottomRight,
+                        StartY = (height - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusBottomRight / 2,
                         EndY = height - SHADOW_MARGIN
                     };
                     break;
@@ -229,24 +226,54 @@
             return Task.FromResult(resutl);
         }
 
-        Task DrawCustomArc(Color[] source, int stroke, int width, int height, int cornerPosition)
+        Task DrawCorners(Color[] colors, int width, int height)
+        {
+            var borderRadius = new float[] { Owner.Border.RadiusBottomLeft, Owner.Border.RadiusBottomRight, Owner.Border.RadiusTopLeft, Owner.Border.RadiusTopRight };
+            if (borderRadius.Sum() != 0)
+            {
+                var stroke = IncreaseValue + (int)Owner.Border.RadiusTopLeft;
+                var ownerWidth = Owner.Width.CurrentValue;
+                var ownerHeight = Owner.Height.CurrentValue;
+
+                if (borderRadius.Distinct().IsSingle() && ownerWidth.AlmostEquals(ownerHeight) && (int)borderRadius.First() == ownerWidth / 2)
+                {
+                    DrawCircle(colors, stroke, width, height / 2);
+                }
+                else
+                {
+                    DrawCustomArc(colors, width, 0, TOP_LEFT);
+                    DrawCustomArc(colors, width, 0, TOP_RIGHT);
+                    DrawCustomArc(colors, width, height, BOTTOM_RIGHT);
+                    DrawCustomArc(colors, width, height, BOTTOM_LEFT);
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
+        Task DrawCustomArc(Color[] source, int width, int height, int cornerPosition)
         {
             double radius;
+            int stroke;
+            var lengthSubMargin = (width - SHADOW_MARGIN) * (height - SHADOW_MARGIN);
 
             switch (cornerPosition)
             {
                 case TOP_LEFT:
                     radius = Owner.Border.RadiusTopLeft;
+                    stroke = IncreaseValue + (int)Owner.Border.RadiusTopLeft;
                     break;
                 case TOP_RIGHT:
                     radius = Owner.Border.RadiusTopRight;
+                    stroke = IncreaseValue + (int)Owner.Border.RadiusTopRight;
                     break;
                 case BOTTOM_RIGHT:
                     radius = Owner.Border.RadiusBottomRight;
-                    stroke -= 1;
+                    stroke = IncreaseValue + (int)Owner.Border.RadiusBottomRight - 1;
                     break;
                 default:
                     radius = Owner.Border.RadiusBottomLeft;
+                    stroke = IncreaseValue + (int)Owner.Border.RadiusBottomLeft;
                     break;
             }
 
@@ -255,7 +282,7 @@
             double circles = 1;
             for (int j = 1; j < stroke; j++)
             {
-                circles = j + 1;
+                circles += 1;
                 for (var i = 0.0; i < FULL_CIRCLE_DEGREE; i += 0.1)
                 {
                     var angle = i * Math.PI / HALF_CIRCLE_DEGREE;
@@ -280,6 +307,28 @@
                             yPos = (int)(yPosLineLen + circles * Math.Sin(angle));
                             break;
                     }
+
+                    var index = Math.Abs(yPos * width + xPos);
+                    if (index > source.Length) continue;
+                    source[index] = Color;
+                }
+            }
+            return Task.CompletedTask;
+        }
+
+        Task DrawCircle(Color[] source, int stroke, int width, int center)
+        {
+            var radius = Owner.Border.RadiusTopLeft;
+            int xPos = 0, yPos = 0;
+            double circles = 1;
+            for (int j = 1; j < stroke; j++)
+            {
+                circles += 1;
+                for (var i = 0.0; i < FULL_CIRCLE_DEGREE; i += 0.1)
+                {
+                    var angle = i * Math.PI / HALF_CIRCLE_DEGREE;
+                    xPos = (int)(center + circles * Math.Cos(angle));
+                    yPos = (int)(center + circles * Math.Sin(angle));
 
                     var index = Math.Abs(yPos * width + xPos);
                     source[index] = Color;
