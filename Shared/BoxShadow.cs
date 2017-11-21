@@ -1,6 +1,7 @@
 ﻿namespace Zebble
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
@@ -12,6 +13,7 @@
         const double FULL_CIRCLE_DEGREE = 360.0, HALF_CIRCLE_DEGREE = 180.0;
 
         View Owner;
+        readonly List<CornerPosition> DrawnCorners = new List<CornerPosition> { CornerPosition.None };
         bool IsRunning = false;
         int IncreaseValue;
 
@@ -85,8 +87,8 @@
             if (Owner.BackgroundColor == Colors.Transparent || Owner.BackgroundImagePath != null || Owner.BackgroundImageData != null)
                 Owner.Background(color: Colors.White);
 
-            X.Set((Owner.ActualX - SHADOW_MARGIN) + (XOffset - Owner.Border.TotalHorizontal));
-            Y.Set((Owner.ActualY - SHADOW_MARGIN) + (YOffset - Owner.Border.TotalVertical));
+            X.Set((Owner.ActualX - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Left + XOffset);
+            Y.Set((Owner.ActualY - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Top + YOffset);
 
             await Owner.BringToFront();
 
@@ -95,12 +97,12 @@
 
         async Task SyncWithOwner()
         {
-            var increaseValue = BlurRadius * 2;
+            IncreaseValue = BlurRadius * 2;
             var height = Height.CurrentValue;
             var width = Width.CurrentValue;
 
-            Height.Set(Owner.Height.CurrentValue + increaseValue + SHADOW_MARGIN * 2);
-            Width.Set(Owner.Width.CurrentValue + increaseValue + SHADOW_MARGIN * 2);
+            Height.Set(Owner.Height.CurrentValue + IncreaseValue + SHADOW_MARGIN * 2);
+            Width.Set(Owner.Width.CurrentValue + IncreaseValue + SHADOW_MARGIN * 2);
 
             if (IsRunning && (Math.Abs(height - Height.CurrentValue) > 2 || Math.Abs(width - Width.CurrentValue) > 2))
                 await IsEnd();
@@ -134,24 +136,103 @@
         {
             if (CurrentFile.Exists) return CurrentFile;
 
-            IncreaseValue = BlurRadius * 2;
-
             var height = (int)Height.CurrentValue;
             var width = (int)Width.CurrentValue;
 
             var length = height * width;
             var colors = Enumerable.Repeat(Colors.Transparent, length).ToArray();
 
-            var topLeft = await GetCorner(IncreaseValue, width, height, TOP_LEFT);
-            var topRight = await GetCorner(IncreaseValue, width, height, TOP_RIGHT);
-            var bottomLeft = await GetCorner(IncreaseValue, width, height, BOTTOM_RIGHT);
-            var bottomRight = await GetCorner(IncreaseValue, width, height, BOTTOM_LEFT);
+            var borderRadius = new float[] { Owner.Border.RadiusTopLeft, Owner.Border.RadiusTopRight, Owner.Border.RadiusBottomRight, Owner.Border.RadiusBottomLeft };
+            if (borderRadius.Sum() != 0)
+            {
+                var ownerWidth = Owner.Width.CurrentValue;
+                var ownerHeight = Owner.Height.CurrentValue;
+
+                if (borderRadius.Distinct().IsSingle() && ownerWidth.AlmostEquals(ownerHeight) && (int)borderRadius.First() == ownerWidth / 2)
+                {
+                    var stroke = GetStrokeByPosition(CornerPosition.TopLeft);
+                    await DrawCircle(colors, stroke, width, height / 2);
+                }
+                else
+                {
+                    await DrawRectangle(colors, width, height, borderRadius);
+
+                    if (ownerHeight > ownerWidth || ownerWidth > ownerHeight)
+                    {
+                        await DrawCylinder(colors, width, height, borderRadius);
+                    }
+                    else
+                    {
+                        await DrawCornerCirlcles(colors, width, height);
+                    }
+                }
+            }
+            else await DrawRectangle(colors, width, height, borderRadius);
+
+            colors = GaussianBlur.Blur(colors, width, height, BlurRadius);
+
+            return await SaveAsPng(width, height, colors);
+        }
+
+        Task<Rec> GetCorner(int width, int height, CornerPosition corner)
+        {
+            Rec resutl = null;
+            switch (corner)
+            {
+                case CornerPosition.TopLeft:
+                    resutl = new Rec
+                    {
+                        StartX = SHADOW_MARGIN,
+                        EndX = IncreaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft / 2,
+                        StartY = SHADOW_MARGIN,
+                        EndY = IncreaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft / 2
+                    };
+                    break;
+                case CornerPosition.TopRight:
+                    resutl = new Rec
+                    {
+                        StartX = (width - SHADOW_MARGIN) - IncreaseValue - (int)Owner.Border.RadiusTopRight / 2,
+                        EndX = width,
+                        StartY = SHADOW_MARGIN,
+                        EndY = IncreaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopRight / 2
+                    };
+                    break;
+                case CornerPosition.BottomLeft:
+                    resutl = new Rec
+                    {
+                        StartX = SHADOW_MARGIN,
+                        EndX = IncreaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusBottomLeft / 2,
+                        StartY = (height - SHADOW_MARGIN) - IncreaseValue - (int)Owner.Border.RadiusBottomLeft / 2,
+                        EndY = height - SHADOW_MARGIN
+                    };
+                    break;
+                case CornerPosition.BottomRight:
+                    resutl = new Rec
+                    {
+                        StartX = (width - SHADOW_MARGIN) - IncreaseValue - (int)Owner.Border.RadiusBottomRight / 2,
+                        EndX = width - SHADOW_MARGIN,
+                        StartY = (height - SHADOW_MARGIN) - IncreaseValue - (int)Owner.Border.RadiusBottomRight / 2,
+                        EndY = height - SHADOW_MARGIN
+                    };
+                    break;
+                default: break;
+            }
+
+            return Task.FromResult(resutl);
+        }
+
+        async Task DrawRectangle(Color[] colors, int width, int height, float[] borderRadius)
+        {
+            var topLeft = await GetCorner(width, height, CornerPosition.TopLeft);
+            var topRight = await GetCorner(width, height, CornerPosition.TopRight);
+            var bottomLeft = await GetCorner(width, height, CornerPosition.BottomRight);
+            var bottomRight = await GetCorner(width, height, CornerPosition.BottomLeft);
 
             for (var y = SHADOW_MARGIN; y < height - SHADOW_MARGIN; y++)
                 for (var x = SHADOW_MARGIN; x < width - SHADOW_MARGIN; x++)
                 {
                     int index = Math.Abs(y * width + x);
-                    if (new float[] { Owner.Border.RadiusBottomLeft, Owner.Border.RadiusBottomRight, Owner.Border.RadiusTopLeft, Owner.Border.RadiusTopRight }.Sum() != 0)
+                    if (borderRadius.Sum() != 0)
                     {
                         if ((x >= topLeft.StartX && x <= topLeft.EndX) && (y >= topLeft.StartY && y <= topLeft.EndY))
                             colors[index] = Colors.Transparent;
@@ -168,173 +249,207 @@
                         colors[index] = Color;
                 }
 
-            await DrawCorners(colors, width, height);
-
-            colors = GaussianBlur.Blur(colors, width, height, BlurRadius);
-
-            return await SaveAsPng(width, height, colors);
+            await Task.CompletedTask;
         }
 
-        Task<Rec> GetCorner(int increaseValue, int width, int height, int corner)
+        async Task DrawCustomArc(Color[] source, int width, int height, CornerPosition cornerPosition)
         {
-            Rec resutl = null;
-            switch (corner)
+            var radius = (int)GetRadiusByPosition(cornerPosition);
+            var stroke = GetStrokeByPosition(cornerPosition) - BlurRadius;
+            var corner = await GetCorner(width, height, cornerPosition);
+            
+            switch (cornerPosition)
             {
-                case 0:
-                    //LeftTop
-                    resutl = new Rec
-                    {
-                        StartX = SHADOW_MARGIN,
-                        EndX = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft / 2,
-                        StartY = SHADOW_MARGIN,
-                        EndY = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft / 2
-                    };
+                case CornerPosition.TopLeft:
+                    await DrawCircle(source, radius, width, corner.StartX + radius, -1, 190.0, 280.0);
                     break;
-                case 1:
-                    //RightTop
-                    resutl = new Rec
-                    {
-                        StartX = (width - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusTopRight / 2,
-                        EndX = width,
-                        StartY = SHADOW_MARGIN,
-                        EndY = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopRight / 2
-                    };
+                case CornerPosition.TopRight:
+                    await DrawCircle(source, radius, width, corner.StartX - (radius / 2) + IncreaseValue, corner.StartY + radius, 270.0, 360.0);
                     break;
-                case 2:
-                    //LeftBottom
-                    resutl = new Rec
-                    {
-                        StartX = SHADOW_MARGIN,
-                        EndX = increaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusBottomLeft / 2,
-                        StartY = (height - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusBottomLeft / 2,
-                        EndY = height - SHADOW_MARGIN
-                    };
+                case CornerPosition.BottomRight:
+                    await DrawCircle(source, radius, width, corner.StartX - (radius / 2) + IncreaseValue, corner.StartY - (radius / 2) + IncreaseValue, 0.0, 90.0);
                     break;
-                case 3:
-                    //RightBottom
-                    resutl = new Rec
-                    {
-                        StartX = (width - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusBottomRight / 2,
-                        EndX = width - SHADOW_MARGIN,
-                        StartY = (height - SHADOW_MARGIN) - increaseValue - (int)Owner.Border.RadiusBottomRight / 2,
-                        EndY = height - SHADOW_MARGIN
-                    };
+                case CornerPosition.BottomLeft:
+                    await DrawCircle(source, radius, width, corner.StartX + radius, corner.StartY - (radius / 2) + IncreaseValue, 90.0, 180.0);
                     break;
                 default: break;
             }
-
-            return Task.FromResult(resutl);
         }
 
-        Task DrawCorners(Color[] colors, int width, int height)
+        async Task DrawCornerCirlcles(Color[] source, int width, int height)
         {
-            var borderRadius = new float[] { Owner.Border.RadiusBottomLeft, Owner.Border.RadiusBottomRight, Owner.Border.RadiusTopLeft, Owner.Border.RadiusTopRight };
-            if (borderRadius.Sum() != 0)
-            {
-                var stroke = IncreaseValue + (int)Owner.Border.RadiusTopLeft;
-                var ownerWidth = Owner.Width.CurrentValue;
-                var ownerHeight = Owner.Height.CurrentValue;
+            if (GetRadiusByPosition(CornerPosition.TopLeft) != 0 && !DrawnCorners.Contains(CornerPosition.TopLeft))
+                await DrawCustomArc(source, width, 0, CornerPosition.TopLeft);
+            if (GetRadiusByPosition(CornerPosition.TopRight) != 0 && !DrawnCorners.Contains(CornerPosition.TopRight))
+                await DrawCustomArc(source, width, 0, CornerPosition.TopRight);
+            if (GetRadiusByPosition(CornerPosition.BottomRight) != 0 && !DrawnCorners.Contains(CornerPosition.BottomRight))
+                await DrawCustomArc(source, width, height, CornerPosition.BottomRight);
+            if (GetRadiusByPosition(CornerPosition.BottomLeft) != 0 && !DrawnCorners.Contains(CornerPosition.BottomLeft))
+                await DrawCustomArc(source, width, height, CornerPosition.BottomLeft);
+        }
 
-                if (borderRadius.Distinct().IsSingle() && ownerWidth.AlmostEquals(ownerHeight) && (int)borderRadius.First() == ownerWidth / 2)
+        Task DrawCircle(Color[] source, int stroke, int width, int centerX, int centerY = -1, double startDegree = 0.0, double endDegree = FULL_CIRCLE_DEGREE)
+        {
+            int xPos = 0, yPos = 0;
+            double circles = 1;
+
+            if (centerY == -1) centerY = centerX;
+
+            for (int j = 1; j < stroke; j++)
+            {
+                circles += 1;
+                for (var i = startDegree; i < endDegree; i += 0.1)
                 {
-                    DrawCircle(colors, stroke, width, height / 2);
+                    var angle = i * Math.PI / HALF_CIRCLE_DEGREE;
+                    xPos = (int)(centerX + circles * Math.Cos(angle));
+                    yPos = (int)(centerY + circles * Math.Sin(angle));
+
+                    var index = Math.Abs(yPos * width + xPos);
+                    source[index] = Color;
+                }
+            }
+            return Task.CompletedTask;
+        }
+
+        Task DrawSemicircular(Color[] source, int width, int height, CornerPosition corner, bool isStand)
+        {
+            int centerX, centerY, stroke;
+            double startDegree, endDegree;
+
+            Func<Task> drawCorner = () => DrawCornerCirlcles(source, width, height);
+
+            if (isStand)
+            {
+                if (corner == CornerPosition.TopLeft)
+                {
+                    if (!Owner.Width.CurrentValue.AlmostEquals(Owner.Border.RadiusTopLeft * 2)) return drawCorner.Invoke();
+
+                    startDegree = HALF_CIRCLE_DEGREE;
+                    endDegree = FULL_CIRCLE_DEGREE;
+                    stroke = GetStrokeByPosition(CornerPosition.TopLeft) - BlurRadius;
+                    centerX = centerY = width / 2;
+
+                    DrawnCorners.Add(CornerPosition.TopLeft);
+                    DrawnCorners.Add(CornerPosition.TopRight);
                 }
                 else
                 {
-                    DrawCustomArc(colors, width, 0, TOP_LEFT);
-                    DrawCustomArc(colors, width, 0, TOP_RIGHT);
-                    DrawCustomArc(colors, width, height, BOTTOM_RIGHT);
-                    DrawCustomArc(colors, width, height, BOTTOM_LEFT);
+                    if (!Owner.Width.CurrentValue.AlmostEquals(Owner.Border.RadiusBottomLeft * 2)) return drawCorner.Invoke();
+
+                    startDegree = 0.0;
+                    endDegree = HALF_CIRCLE_DEGREE;
+                    stroke = GetStrokeByPosition(CornerPosition.BottomLeft) - BlurRadius;
+                    centerX = width / 2;
+                    centerY = height - (SHADOW_MARGIN + stroke);
+
+                    DrawnCorners.Add(CornerPosition.BottomLeft);
+                    DrawnCorners.Add(CornerPosition.BottomRight);
+                }
+            }
+            else
+            {
+                if (corner == CornerPosition.TopLeft)
+                {
+                    if (!Owner.Height.CurrentValue.AlmostEquals(Owner.Border.RadiusTopLeft * 2)) return drawCorner.Invoke();
+
+                    startDegree = 90.0;
+                    endDegree = 270.0;
+                    stroke = GetStrokeByPosition(CornerPosition.TopLeft) - BlurRadius;
+                    centerX = centerY = SHADOW_MARGIN + stroke;
+
+                    DrawnCorners.Add(CornerPosition.TopLeft);
+                    DrawnCorners.Add(CornerPosition.BottomLeft);
+                }
+                else
+                {
+                    if (!Owner.Height.CurrentValue.AlmostEquals(Owner.Border.RadiusTopRight * 2)) return drawCorner.Invoke();
+
+                    startDegree = 270.0;
+                    endDegree = 450.0;
+                    stroke = GetStrokeByPosition(CornerPosition.BottomLeft) - BlurRadius;
+                    centerX = width - (SHADOW_MARGIN + stroke);
+                    centerY = SHADOW_MARGIN + stroke;
+
+                    DrawnCorners.Add(CornerPosition.TopRight);
+                    DrawnCorners.Add(CornerPosition.BottomRight);
+                }
+            }
+
+            return DrawCircle(source, stroke, width, centerX, centerY, startDegree, endDegree);
+        }
+
+        Task DrawCylinder(Color[] source, int width, int height, float[] radius)
+        {
+            if (height > width)
+            {
+                if (radius[TOP_LEFT] != 0 && radius[TOP_LEFT].AlmostEquals(radius[TOP_RIGHT]))
+                {
+                    DrawSemicircular(source, width, height, CornerPosition.TopLeft, isStand: true);
+                }
+
+                if (radius[BOTTOM_LEFT] != 0 && radius[BOTTOM_LEFT].AlmostEquals(radius[BOTTOM_RIGHT]))
+                {
+                    DrawSemicircular(source, width, height, CornerPosition.BottomLeft, isStand: true);
+                }
+            }
+            else
+            {
+                if (radius[TOP_LEFT] != 0 && radius[TOP_LEFT].AlmostEquals(radius[BOTTOM_LEFT]))
+                {
+                    DrawSemicircular(source, width, height, CornerPosition.TopLeft, isStand: false);
+                }
+
+                if (radius[TOP_RIGHT] != 0 && radius[TOP_RIGHT].AlmostEquals(radius[BOTTOM_RIGHT]))
+                {
+                    DrawSemicircular(source, width, height, CornerPosition.TopRight, isStand: false);
                 }
             }
 
             return Task.CompletedTask;
         }
 
-        Task DrawCustomArc(Color[] source, int width, int height, int cornerPosition)
+        int GetStrokeByPosition(CornerPosition position)
         {
-            double radius;
-            int stroke;
-            var lengthSubMargin = (width - SHADOW_MARGIN) * (height - SHADOW_MARGIN);
-
-            switch (cornerPosition)
+            int result;
+            switch (position)
             {
-                case TOP_LEFT:
-                    radius = Owner.Border.RadiusTopLeft;
-                    stroke = IncreaseValue + (int)Owner.Border.RadiusTopLeft;
+                case CornerPosition.TopLeft:
+                    result = IncreaseValue + (int)Owner.Border.RadiusTopLeft;
                     break;
-                case TOP_RIGHT:
-                    radius = Owner.Border.RadiusTopRight;
-                    stroke = IncreaseValue + (int)Owner.Border.RadiusTopRight;
+                case CornerPosition.TopRight:
+                    result = IncreaseValue + (int)Owner.Border.RadiusTopRight;
                     break;
-                case BOTTOM_RIGHT:
-                    radius = Owner.Border.RadiusBottomRight;
-                    stroke = IncreaseValue + (int)Owner.Border.RadiusBottomRight - 1;
+                case CornerPosition.BottomRight:
+                    result = IncreaseValue + (int)Owner.Border.RadiusBottomRight - 1;
                     break;
                 default:
-                    radius = Owner.Border.RadiusBottomLeft;
-                    stroke = IncreaseValue + (int)Owner.Border.RadiusBottomLeft;
+                    result = IncreaseValue + (int)Owner.Border.RadiusBottomLeft;
                     break;
             }
 
-            var cornerAdjustingValue = SHADOW_MARGIN * 2 + radius;
-            int xPos = 0, yPos = 0;
-            double circles = 1;
-            for (int j = 1; j < stroke; j++)
-            {
-                circles += 1;
-                for (var i = 0.0; i < FULL_CIRCLE_DEGREE; i += 0.1)
-                {
-                    var angle = i * Math.PI / HALF_CIRCLE_DEGREE;
-                    switch (cornerPosition)
-                    {
-                        case TOP_LEFT:
-                            xPos = (int)(cornerAdjustingValue + circles * Math.Cos(angle));
-                            yPos = (int)(cornerAdjustingValue + circles * Math.Sin(angle));
-                            break;
-                        case TOP_RIGHT:
-                            var xPosLineLen = width - cornerAdjustingValue;
-                            xPos = (int)(xPosLineLen + circles * Math.Cos(angle));
-                            yPos = (int)(YOffset + cornerAdjustingValue + circles * Math.Sin(angle));
-                            break;
-                        case BOTTOM_RIGHT:
-                            xPos = (int)(Math.Abs(width - cornerAdjustingValue + 1) + circles * Math.Cos(angle));
-                            yPos = (int)(Math.Abs(height - cornerAdjustingValue + 1) + circles * Math.Sin(angle));
-                            break;
-                        default:
-                            var yPosLineLen = height - cornerAdjustingValue;
-                            xPos = (int)(cornerAdjustingValue + circles * Math.Cos(angle));
-                            yPos = (int)(yPosLineLen + circles * Math.Sin(angle));
-                            break;
-                    }
-
-                    var index = Math.Abs(yPos * width + xPos);
-                    if (index > source.Length) continue;
-                    source[index] = Color;
-                }
-            }
-            return Task.CompletedTask;
+            return result;
         }
 
-        Task DrawCircle(Color[] source, int stroke, int width, int center)
+        float GetRadiusByPosition(CornerPosition position)
         {
-            var radius = Owner.Border.RadiusTopLeft;
-            int xPos = 0, yPos = 0;
-            double circles = 1;
-            for (int j = 1; j < stroke; j++)
+            float result;
+            switch (position)
             {
-                circles += 1;
-                for (var i = 0.0; i < FULL_CIRCLE_DEGREE; i += 0.1)
-                {
-                    var angle = i * Math.PI / HALF_CIRCLE_DEGREE;
-                    xPos = (int)(center + circles * Math.Cos(angle));
-                    yPos = (int)(center + circles * Math.Sin(angle));
-
-                    var index = Math.Abs(yPos * width + xPos);
-                    source[index] = Color;
-                }
+                case CornerPosition.TopLeft:
+                    result = Owner.Border.RadiusTopLeft;
+                    break;
+                case CornerPosition.TopRight:
+                    result = Owner.Border.RadiusTopRight;
+                    break;
+                case CornerPosition.BottomRight:
+                    result = Owner.Border.RadiusBottomRight;
+                    break;
+                default:
+                    result = Owner.Border.RadiusBottomLeft;
+                    break;
             }
-            return Task.CompletedTask;
+
+            return result;
         }
     }
 
@@ -344,5 +459,14 @@
         public int StartY { get; set; }
         public int EndX { get; set; }
         public int EndY { get; set; }
+    }
+
+    internal enum CornerPosition
+    {
+        None = -1,
+        TopLeft = 0,
+        TopRight = 1,
+        BottomRight = 2,
+        BottomLeft = 3
     }
 }

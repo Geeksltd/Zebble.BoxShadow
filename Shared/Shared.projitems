@@ -16,8 +16,8 @@
     <None Include="$(MSBuildThisFileDirectory)NuGet\Icon.png" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)GaussianBlur.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BoxShadow.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GaussianBlur.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BoxShadowExtensions.cs" />
   </ItemGroup>
 </Project>

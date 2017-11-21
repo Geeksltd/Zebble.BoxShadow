@@ -16,7 +16,7 @@
     },
     {
       "Analyzer": "MeaningfulNameForVariablesAnalyzer",
-      "OccurrenceCount": 94,
+      "OccurrenceCount": 105,
       "Exceptions": null,
       "SentToServer": true,
       "InstallationName": "DESKTOP-LLCTIMB"
