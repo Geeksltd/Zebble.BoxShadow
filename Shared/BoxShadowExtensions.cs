@@ -16,7 +16,8 @@
                         XOffset = xOffset,
                         YOffset = yOffset,
                         Color = color ?? Colors.Gray,
-                        Id = id
+                        Id = id,
+                        ZIndex = owner.ZIndex - 1
                     };
 
                     shadow.For.Parent.Add(shadow);
