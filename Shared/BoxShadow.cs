@@ -17,7 +17,6 @@
         bool IsRunning = false;
         int IncreaseValue;
 
-
         FileInfo CurrentFile
         {
             get
@@ -224,8 +223,8 @@
         {
             var topLeft = await GetCorner(width, height, CornerPosition.TopLeft);
             var topRight = await GetCorner(width, height, CornerPosition.TopRight);
-            var bottomLeft = await GetCorner(width, height, CornerPosition.BottomRight);
-            var bottomRight = await GetCorner(width, height, CornerPosition.BottomLeft);
+            var bottomLeft = await GetCorner(width, height, CornerPosition.BottomLeft);
+            var bottomRight = await GetCorner(width, height, CornerPosition.BottomRight);
 
             for (var y = SHADOW_MARGIN; y < height - SHADOW_MARGIN; y++)
                 for (var x = SHADOW_MARGIN; x < width - SHADOW_MARGIN; x++)
@@ -233,14 +232,26 @@
                     int index = Math.Abs(y * width + x);
                     if (borderRadius.Sum() != 0)
                     {
-                        if ((x >= topLeft.StartX && x <= topLeft.EndX) && (y >= topLeft.StartY && y <= topLeft.EndY))
+                        if ((x >= topLeft.StartX && x <= SHADOW_MARGIN + borderRadius[TOP_LEFT] - 1) &&
+                            (y >= topLeft.StartY && y <= SHADOW_MARGIN + borderRadius[TOP_LEFT]))
+                        {
                             colors[index] = Colors.Transparent;
-                        else if ((x >= topRight.StartX && x <= topRight.EndX) && (y >= topRight.StartY && y <= topRight.EndY))
+                        }
+                        else if ((x >= width - (SHADOW_MARGIN + borderRadius[TOP_RIGHT]) && x <= topRight.EndX) &&
+                            (y >= topRight.StartY && y <= SHADOW_MARGIN + borderRadius[TOP_RIGHT] - 1))
+                        {
                             colors[index] = Colors.Transparent;
-                        else if ((x >= bottomLeft.StartX && x <= bottomLeft.EndX) && (y >= bottomLeft.StartY && y <= bottomLeft.EndY))
+                        }
+                        else if ((x >= bottomLeft.StartX && x <= SHADOW_MARGIN + borderRadius[BOTTOM_LEFT]) &&
+                            (y >= height - (SHADOW_MARGIN + borderRadius[BOTTOM_LEFT]) && y <= bottomLeft.EndY))
+                        {
                             colors[index] = Colors.Transparent;
-                        else if ((x >= bottomRight.StartX && x <= bottomRight.EndX) && (y >= bottomRight.StartY && y <= bottomRight.EndY))
+                        }
+                        else if ((x >= width - (SHADOW_MARGIN + borderRadius[BOTTOM_RIGHT]) && x <= bottomRight.EndX) &&
+                            (y >= height - (SHADOW_MARGIN + borderRadius[BOTTOM_RIGHT]) && y <= bottomRight.EndY))
+                        {
                             colors[index] = Colors.Transparent;
+                        }
                         else
                             colors[index] = Color;
                     }
@@ -255,21 +266,20 @@
         {
             var radius = (int)GetRadiusByPosition(cornerPosition);
             var stroke = GetStrokeByPosition(cornerPosition) - BlurRadius;
-            var corner = await GetCorner(width, height, cornerPosition);
 
             switch (cornerPosition)
             {
                 case CornerPosition.TopLeft:
-                    await DrawCircle(source, radius, width, corner.StartX + radius, -1, 190.0, 280.0);
+                    await DrawCircle(source, radius, width, SHADOW_MARGIN + radius, -1, 180.0, 270.0);
                     break;
                 case CornerPosition.TopRight:
-                    await DrawCircle(source, radius, width, corner.StartX - (radius / 2) + IncreaseValue, corner.StartY + radius, 270.0, 360.0);
+                    await DrawCircle(source, radius, width, width - (SHADOW_MARGIN + radius), SHADOW_MARGIN + radius, 270.0, 360.0);
                     break;
                 case CornerPosition.BottomRight:
-                    await DrawCircle(source, radius, width, corner.StartX - (radius / 2) + IncreaseValue, corner.StartY - (radius / 2) + IncreaseValue, 0.0, 90.0);
+                    await DrawCircle(source, radius, width, width - (SHADOW_MARGIN + radius), height - (SHADOW_MARGIN + radius), 0.0, 90.0);
                     break;
                 case CornerPosition.BottomLeft:
-                    await DrawCircle(source, radius, width, corner.StartX + radius, corner.StartY - (radius / 2) + IncreaseValue, 90.0, 180.0);
+                    await DrawCircle(source, radius, width, SHADOW_MARGIN + radius, height - (SHADOW_MARGIN + radius), 90.0, 180.0);
                     break;
                 default: break;
             }
@@ -304,6 +314,7 @@
                     yPos = (int)(centerY + circles * Math.Sin(angle));
 
                     var index = Math.Abs(yPos * width + xPos);
+                    if (index >= source.Length) continue;
                     source[index] = Color;
                 }
             }

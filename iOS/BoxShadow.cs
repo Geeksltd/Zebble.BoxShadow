@@ -10,8 +10,6 @@
     {
         public async Task<FileInfo> SaveAsPng(int imageWidth, int imageHeight, Color[] colors)
         {
-            var byteArray = colors.ToByteArray(imageWidth, imageHeight);
-
             return await Device.UIThread.Run(async () =>
             {
                 var image = DrawBitmap(colors, imageWidth, imageHeight);
