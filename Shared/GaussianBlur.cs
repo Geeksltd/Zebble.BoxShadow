@@ -12,19 +12,7 @@
         public static Color[] Blur(Color[] colors, int width, int height, int radius)
         {
             int bitsPerPixel = 4;
-            var imageArray = new byte[width * height * bitsPerPixel];
-
-            for (int i = 0; i < imageArray.Length; i += 4)
-            {
-                var pixelNumber = i / bitsPerPixel;
-                var color = colors[pixelNumber];
-
-                imageArray[i] = color.Blue;
-                imageArray[i + 1] = color.Green;
-                imageArray[i + 2] = color.Red;
-                imageArray[i + 3] = color.Alpha;
-            }
-
+            var imageArray = colors.ToByteArray(width, height);
 
             var newRed = new byte[width * height];
             var newGreen = new byte[width * height];
@@ -42,9 +30,9 @@
             {
                 var index = i * bitsPerPixel;
 
-                blue[i] = imageArray[index];
+                red[i] = imageArray[index];
                 green[i] = imageArray[index + 1];
-                red[i] = imageArray[index + 2];
+                blue[i] = imageArray[index + 2];
                 alpha[i] = imageArray[index + 3];
             });
 

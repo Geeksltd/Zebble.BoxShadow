@@ -14,7 +14,7 @@
 
             return await Device.UIThread.Run(async () =>
             {
-                var image = ConvertBitmapRGBA8ToUIImage(byteArray, imageWidth, imageHeight);
+                var image = DrawBitmap(colors, imageWidth, imageHeight);
                 using (var imageData = image.AsPNG())
                 {
                     var myByteArray = new byte[imageData.Length];
@@ -28,52 +28,27 @@
             });
         }
 
-        UIImage ConvertBitmapRGBA8ToUIImage(byte[] buffer, int width, int height)
+        UIImage DrawBitmap(Color[] color, int width, int height)
         {
-            using (var provider = new CGDataProvider(buffer, 0, buffer.Length))
+            UIGraphics.BeginImageContextWithOptions(new CGSize(width, height), opaque: false, scale: 0.0f);
+            var context = UIGraphics.GetCurrentContext();
+
+            for (int y = 0; y < height; y++)
             {
-                const int bitsPerComponent = 8;
-                const int bitsPerPixel = 32;
-                var bytesPerRow = 4 * width;
-
-                var colorSpaceRef = CGColorSpace.CreateDeviceRGB();
-
-                if (colorSpaceRef == null)
+                for (int x = 0; x < width; x++)
                 {
-                    Device.Log.Error(@"Error allocating color space");
-                    return null;
+                    int index = y * width + x;
+                    var cgColor = color[index].Render().CGColor;
+                    context.SetFillColor(cgColor);
+                    context.FillRect(new CGRect(x, y, 1.0f, 1.0f));
                 }
-
-                var bitmapInfo = CGBitmapFlags.ByteOrderDefault;
-                var renderingIntent = CGColorRenderingIntent.Default;
-
-                var iref = new CGImage(width, height, bitsPerComponent, bitsPerPixel, bytesPerRow, colorSpaceRef, bitmapInfo, provider, null, true, renderingIntent);
-
-                var pixels = new byte[buffer.Length];
-                var context = new CGBitmapContext(pixels, width, height, bitsPerComponent, bytesPerRow, colorSpaceRef, CGImageAlphaInfo.PremultipliedLast);
-
-                if (context == null)
-                {
-                    Device.Log.Error(@"Error context not created");
-                    return null;
-                }
-
-                UIImage image = null;
-
-                context.DrawImage(new CGRect(0.0f, 0.0f, width, height), iref);
-                var imageRef = context.ToImage();
-
-                var scale = UIScreen.MainScreen.Scale;
-                image = new UIImage(imageRef, scale: scale, orientation: UIImageOrientation.Up);
-
-                imageRef.Dispose();
-                context.Dispose();
-                colorSpaceRef.Dispose();
-                iref.Dispose();
-                pixels = null;
-
-                return image;
             }
+
+            var image = UIGraphics.GetImageFromCurrentImageContext();
+            UIGraphics.EndImageContext();
+
+            return image;
         }
+
     }
 }

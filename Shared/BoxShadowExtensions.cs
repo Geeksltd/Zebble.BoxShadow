@@ -6,6 +6,8 @@
         {
             owner.WhenShown(() =>
             {
+                if (owner.Id == null) throw new System.Exception("The owner of shadow should have unique identification");
+
                 var id = $"{owner.Id}BoxShadow";
                 if (!Nav.CurrentPage.AllChildren.Any(rec => rec.Id == id))
                 {

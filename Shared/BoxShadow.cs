@@ -91,7 +91,6 @@
             Y.Set((Owner.ActualY - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Top + YOffset);
 
             await Owner.BringToFront();
-
             await base.OnRendered();
         }
 
@@ -257,7 +256,7 @@
             var radius = (int)GetRadiusByPosition(cornerPosition);
             var stroke = GetStrokeByPosition(cornerPosition) - BlurRadius;
             var corner = await GetCorner(width, height, cornerPosition);
-            
+
             switch (cornerPosition)
             {
                 case CornerPosition.TopLeft:
