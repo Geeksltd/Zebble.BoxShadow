@@ -83,9 +83,6 @@
 
         public async override Task OnRendered()
         {
-            if (Owner.BackgroundColor == Colors.Transparent || Owner.BackgroundImagePath != null || Owner.BackgroundImageData != null)
-                Owner.Background(color: Colors.White);
-
             X.Set((Owner.ActualX - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Left + XOffset);
             Y.Set((Owner.ActualY - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Top + YOffset);
 
