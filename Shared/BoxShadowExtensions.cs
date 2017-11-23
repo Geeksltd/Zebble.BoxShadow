@@ -23,6 +23,8 @@
                     };
 
                     shadow.For.Parent.Add(shadow);
+                    if (shadow.For.Parent is Canvas)
+                        (shadow.For.Parent as Canvas).ClipChildren = false;
                 }
             });
         }

@@ -89,7 +89,6 @@
             X.Set((Owner.ActualX - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Left + XOffset);
             Y.Set((Owner.ActualY - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Top + YOffset);
 
-            await Owner.BringToFront();
             await base.OnRendered();
         }
 
