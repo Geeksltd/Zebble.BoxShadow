@@ -83,8 +83,8 @@
 
         public async override Task OnRendered()
         {
-            X.Set((Owner.ActualX - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Left + XOffset);
-            Y.Set((Owner.ActualY - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Top + YOffset);
+            X.BindTo(Owner.X, x => (x - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Left + XOffset);
+            Y.BindTo(Owner.Y, y => (y - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Top + YOffset);
 
             await base.OnRendered();
         }
