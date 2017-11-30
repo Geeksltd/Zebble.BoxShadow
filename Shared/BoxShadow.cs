@@ -91,12 +91,11 @@
 
         async Task SyncWithOwner()
         {
-            IncreaseValue = BlurRadius * 2;
             var height = Height.CurrentValue;
             var width = Width.CurrentValue;
 
-            Height.Set(Owner.Height.CurrentValue + IncreaseValue + SHADOW_MARGIN * 2);
-            Width.Set(Owner.Width.CurrentValue + IncreaseValue + SHADOW_MARGIN * 2);
+            Height.BindTo(Owner.Height, h => h + (BlurRadius + SHADOW_MARGIN) * 2);
+            Width.BindTo(Owner.Width, w => w + (BlurRadius + SHADOW_MARGIN) * 2);
 
             if (IsRunning && (Math.Abs(height - Height.CurrentValue) > 2 || Math.Abs(width - Width.CurrentValue) > 2))
                 await IsEnd();
