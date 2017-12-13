@@ -1,9 +1,9 @@
 ﻿{
   "dependencies": {
-    "Zebble": "4.2.315"
+    "Zebble": "4.2.373"
   },
   "frameworks": {
-    "uap10.0": {}
+    "uap10.0.10240": {}
   },
   "runtimes": {
     "win10-arm": {},
