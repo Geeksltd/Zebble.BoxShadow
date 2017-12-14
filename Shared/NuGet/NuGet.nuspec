@@ -4,17 +4,16 @@
     <id>Zebble.BoxShadow</id>
     <version>1.2.101</version>
     <title>BoxShadow for Zebble (Xamarin)</title>
-    <projectUrl>https://github.com/Geeksltd/Zebble.Shadow</projectUrl>
-    <iconUrl>https://raw.githubusercontent.com/Geeksltd/Zebble.Shadow/master/Shared/NuGet/Icon.png</iconUrl>
+    <projectUrl>https://github.com/Geeksltd/Zebble.BoxShadow</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/Geeksltd/Zebble.BoxShadow/master/Shared/NuGet/Icon.png</iconUrl>
     <copyright>Copyright ©2017 Geeks Ltd - All rights reserved.</copyright>
     <description>A UI component for Zebble apps that can be added to another object to draw a shadow behind it</description>
     <authors>Geeks Ltd</authors>
-    <dependencies>
-    </dependencies>
+    <dependencies></dependencies>
   </metadata>
   <files>
-    <file src="..\..\lib\Zebble.Shadow.iOS.*" target="lib\Xamarin.iOS10\" />
-    <file src="..\..\lib\Zebble.Shadow.Android.*" target="lib\MonoAndroid10\" />
-    <file src="..\..\lib\Zebble.Shadow.UWP.*" target="lib\UAP10\" />
+    <file src="..\..\lib\Zebble.BoxShadow.iOS.*" target="lib\Xamarin.iOS10\" />
+    <file src="..\..\lib\Zebble.BoxShadow.Android.*" target="lib\MonoAndroid10\" />
+    <file src="..\..\lib\Zebble.BoxShadow.UWP.*" target="lib\UAP10\" />
   </files>
 </package>
