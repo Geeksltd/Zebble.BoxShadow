@@ -11,7 +11,7 @@
 
         public static Color[] Blur(Color[] colors, int width, int height, int radius)
         {
-            int bitsPerPixel = 4;
+            var bitsPerPixel = 4;
             var imageArray = colors.ToByteArray(width, height);
 
             var newRed = new byte[width * height];
@@ -79,9 +79,8 @@
 
             var sizes = new int[number];
             for (var i = 0; i < number; i++)
-            {
                 sizes[i] = (int)(i < roundedmIdeal ? wl : wu);
-            }
+
             return sizes;
         }
         static void GaussBlur(byte[] scl, byte[] tcl, int width, int height, double radius)
@@ -115,11 +114,13 @@
                     val += scl[ri++] - fv;
                     tcl[ti++] = Convert.ToByte(Math.Round(val * iarr));
                 }
+
                 for (var j = radius + 1; j < width - radius; j++)
                 {
                     val += scl[ri++] - scl[li++];
                     tcl[ti++] = Convert.ToByte(Math.Round(val * iarr));
                 }
+
                 for (var j = width - radius; j < width; j++)
                 {
                     val += lv - scl[li++];
@@ -146,12 +147,14 @@
                     tcl[ti] = Convert.ToByte(Math.Round(val * iarr));
                     ri += width; ti += width;
                 }
+
                 for (var j = radius + 1; j < height - radius; j++)
                 {
                     val += scl[ri] - scl[li];
                     tcl[ti] = Convert.ToByte(Math.Round(val * iarr));
                     li += width; ri += width; ti += width;
                 }
+
                 for (var j = height - radius; j < height; j++)
                 {
                     val += lv - scl[li];

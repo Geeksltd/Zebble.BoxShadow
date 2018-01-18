@@ -14,7 +14,7 @@
 
         View Owner;
         readonly List<CornerPosition> DrawnCorners = new List<CornerPosition> { CornerPosition.None };
-        bool IsRunning = false;
+        bool IsRunning;
         int IncreaseValue;
 
         FileInfo CurrentFile
@@ -71,7 +71,7 @@
         {
             await WhenShown(() =>
             {
-                Device.UIThread.Run(() =>
+                Thread.UI.Run(() =>
                 {
 #if UWP
                     var native = this.Native();
@@ -224,7 +224,7 @@
             for (var y = SHADOW_MARGIN; y < height - SHADOW_MARGIN; y++)
                 for (var x = SHADOW_MARGIN; x < width - SHADOW_MARGIN; x++)
                 {
-                    int index = Math.Abs(y * width + x);
+                    var index = Math.Abs(y * width + x);
                     if (borderRadius.Sum() != 0)
                     {
                         if ((x >= topLeft.StartX && x <= SHADOW_MARGIN + borderRadius[TOP_LEFT] - 1) &&
@@ -313,6 +313,7 @@
                     source[index] = Color;
                 }
             }
+
             return Task.CompletedTask;
         }
 

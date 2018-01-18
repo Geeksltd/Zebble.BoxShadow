@@ -1,16 +1,16 @@
 ﻿namespace Zebble
 {
+    using CoreGraphics;
+    using System;
     using System.IO;
     using System.Threading.Tasks;
     using UIKit;
-    using CoreGraphics;
-    using System;
 
     public partial class BoxShadow
     {
-        public async Task<FileInfo> SaveAsPng(int imageWidth, int imageHeight, Color[] colors)
+        public Task<FileInfo> SaveAsPng(int imageWidth, int imageHeight, Color[] colors)
         {
-            return await Device.UIThread.Run(async () =>
+            return Thread.UI.Run(async () =>
             {
                 var image = DrawBitmap(colors, imageWidth, imageHeight);
                 using (var imageData = image.AsPNG())
@@ -35,7 +35,7 @@
             {
                 for (int x = 0; x < width; x++)
                 {
-                    int index = y * width + x;
+                    var index = y * width + x;
                     var cgColor = color[index].Render().CGColor;
                     context.SetFillColor(cgColor);
                     context.FillRect(new CGRect(x, y, 1.0f, 1.0f));
@@ -47,6 +47,5 @@
 
             return image;
         }
-
     }
 }

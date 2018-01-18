@@ -31,8 +31,8 @@
 
         public static byte[] ToByteArray(this Color[] colors, int width, int height)
         {
-            const int bitsPerPixel = 4;
-            var imageArray = new byte[width * height * bitsPerPixel];
+            const int BITS_PER_PIXEL = 4;
+            var imageArray = new byte[width * height * BITS_PER_PIXEL];
 
             for (var i = 0; i < colors.Length; i++)
             {
