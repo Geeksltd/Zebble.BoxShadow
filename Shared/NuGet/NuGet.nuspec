@@ -2,11 +2,11 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
   <metadata>
     <id>Zebble.BoxShadow</id>
-    <version>1.2.101</version>
+    <version>1.2.102</version>
     <title>BoxShadow for Zebble (Xamarin)</title>
     <projectUrl>https://github.com/Geeksltd/Zebble.BoxShadow</projectUrl>
     <iconUrl>https://raw.githubusercontent.com/Geeksltd/Zebble.BoxShadow/master/Shared/NuGet/Icon.png</iconUrl>
-    <copyright>Copyright ©2017 Geeks Ltd - All rights reserved.</copyright>
+    <copyright>Copyright © 2018 Geeks Ltd - All rights reserved.</copyright>
     <description>A UI component for Zebble apps that can be added to another object to draw a shadow behind it</description>
     <authors>Geeks Ltd</authors>
     <dependencies></dependencies>
