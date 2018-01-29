@@ -1,9 +1,25 @@
-﻿namespace Zebble
+﻿using System.Threading.Tasks;
+
+namespace Zebble
 {
     public static class BoxShadowExtensions
     {
         public static void BoxShadow(this View owner, int xOffset = 0, int yOffset = 0, int blurRadius = 3, Color color = null)
         {
+            BoxShadow shadow = null;
+
+            async Task setVisibility()
+            {
+                var isOwnerHidden = owner.Opacity == 0 || !owner.Visible || owner.ZIndex < 0 || owner.Ignored;
+                if (shadow != null)
+                    await shadow.WhenShown(() => shadow.Opacity(isOwnerHidden ? 0 : 1));
+            }
+
+            owner.On(x => x.VisibilityChanged, setVisibility)
+                .On(x => x.OpacityChanged, setVisibility)
+                .On(x => x.ZIndexChanged, setVisibility);
+
+
             owner.WhenShown(() =>
             {
                 if (owner.Id == null) throw new System.Exception("The owner of shadow should have unique identification");
@@ -11,7 +27,7 @@
                 var id = $"{owner.Id}BoxShadow";
                 if (!Nav.CurrentPage.AllChildren.Any(rec => rec.Id == id))
                 {
-                    var shadow = new BoxShadow
+                    shadow = new BoxShadow
                     {
                         For = owner,
                         BlurRadius = blurRadius,
@@ -25,6 +41,8 @@
                     shadow.For.Parent.Add(shadow);
                     if (shadow.For.Parent is Canvas)
                         (shadow.For.Parent as Canvas).ClipChildren = false;
+
+
                 }
             });
         }
