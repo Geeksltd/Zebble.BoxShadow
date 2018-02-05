@@ -58,6 +58,9 @@
                 return;
             }
 
+            if (!CurrentFile.Exists)
+                Visible = false;
+
             // Attach to the owner:
             await SyncWithOwner();
             Owner.X.Changed.Handle(SyncWithOwner);
@@ -104,15 +107,16 @@
 
             IsRunning = true;
 
-            Visible = Owner.Visible;
             Opacity = Owner.Opacity;
 
             try
             {
-                if (Visible)
+                if (Owner.Visible)
                 {
                     var target = await CreateImageFile();
                     BackgroundImagePath = target.FullName;
+
+                    await this.Animate(AnimationEasing.EaseIn, bx => bx.Visible(value: true));
                 }
             }
             catch (Exception ex) { Device.Log.Error(ex.Message); }
