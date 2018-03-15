@@ -21,7 +21,9 @@
         {
             get
             {
-                var name = new object[] { Owner.ActualX, Owner.ActualY, Owner.Border.RadiusBottomLeft, Owner.Border.RadiusBottomRight,
+                var name = new object[] { Owner.Margin.Top, Owner.Margin.Left,
+                    Owner.Parent.Padding.Top, Owner.Parent.Padding.Left,
+                    Owner.ActualX, Owner.ActualY, Owner.Border.RadiusBottomLeft, Owner.Border.RadiusBottomRight,
                     Owner.Border.RadiusTopLeft, Owner.Border.RadiusTopRight, Owner.Width, Owner.Height,BlurRadius,XOffset,YOffset }.ToString("|").ToIOSafeHash();
                 return Device.IO.GetTempRoot().GetFile($"{name}.png");
             }
@@ -86,8 +88,25 @@
 
         public async override Task OnRendered()
         {
-            X.BindTo(Owner.X, x => (x - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Left + XOffset);
-            Y.BindTo(Owner.Y, y => (y - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Top + YOffset);
+            X.BindTo(Owner.X, Owner.Margin.Left, Owner.Parent.Padding.Left, (x, oml, opl) =>
+            {
+                var value = (x - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Left + XOffset;
+
+                if (Owner.Absolute) value += oml;
+                else value += oml + opl;
+
+                return value;
+            });
+
+            Y.BindTo(Owner.Y, Owner.Margin.Top, Owner.Parent.Padding.Top, (y, omt, opt) =>
+            {
+                var value = (y - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Top + YOffset;
+
+                if (Owner.Absolute) value += omt;
+                else value += omt + opt;
+
+                return value;
+            });
 
             await base.OnRendered();
         }
