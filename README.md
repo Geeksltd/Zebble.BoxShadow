@@ -1,19 +1,43 @@
-# Zebble.Shadow
-A UI component for Zebble apps that can be added to another object to draw a shadow behind it.
+[logo]: https://raw.githubusercontent.com/Geeksltd/Zebble.BoxShadow/master/Shared/NuGet/Icon.png "Zebble.BoxShadow"
 
-It supports the common options from the CSS box-shadow attribute including Color, X-Offset, Y-Offset, Blur, and Spread.
 
-## How does it work?
+## Zebble.BoxShadow
 
-Shadow support in native mobile platforms is limited due to performance and other reasons. To solve that, we use this technique:
+![logo]
 
-For every unique shadow settings combination (color, width, height, blur and spread) it will generate the shadow image as a PNG file once.
-This is done only the first time, and the resulting image will be saved in the cache folder and reused for all future cases where it needs to be rendered.
+A plugin to add shadow for all objects in Zebble application.
 
-The decoded image will also be cached in memory in the standard way that Zebble apps do it.
 
-### Performance?
+[![NuGet](https://img.shields.io/nuget/v/Zebble.BoxShadow.svg?label=NuGet)](https://www.nuget.org/packages/Zebble.BoxShadow/)
 
-Usually in apps, a small number of shadow combinations will be used.
-So with this technique, we only add a one-off performance impact for the first time a shadow is requestd.
-After that in terms of performance, drawing a shadow will be effectively as simple as rendering an image.
+> With BoxShadow plugin you can add rounded and typical shadow with different color and offset in all of platforms of Zebble aplications.
+
+<br>
+
+
+### Setup
+* Available on NuGet: [https://www.nuget.org/packages/Zebble.BoxShadow/](https://www.nuget.org/packages/Zebble.BoxShadow/)
+* Install in your platform client projects.
+* Available for iOS, Android and UWP.
+<br>
+
+
+### Api Usage
+To add shadow to the Views you can use below code:
+```csharp
+public override async Task OnInitialized()
+{
+	myLabel.BoxShadow(1,1,1,Color.Red);
+}
+```
+
+<br>
+
+### Properties
+| Property     | Type         | Android | iOS | Windows |
+| :----------- | :----------- | :------ | :-- | :------ |
+| Color           | Color          | x       | x   | x       |
+| XOffset           | int          | x       | x   | x       |
+| YOffset           | int          | x       | x   | x       |
+| BlurRadius | int | x       | x   | x       |
+| For | View | x       | x   | x       |
