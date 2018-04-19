@@ -14,22 +14,37 @@
 
         View Owner;
         readonly List<CornerPosition> DrawnCorners = new List<CornerPosition> { CornerPosition.None };
-        bool IsRunning;
         int IncreaseValue;
 
-        FileInfo CurrentFile
+        static List<KeyValuePair<string, byte[]>> RenderedShadows = new List<KeyValuePair<string, byte[]>> { };
+        AsyncLock RenderSyncLock = new AsyncLock();
+
+        string CurrentFileName
         {
             get
             {
-                var name = new object[] { Owner.Margin.Top, Owner.Margin.Left,
-                    Owner.Parent.Padding.Top, Owner.Parent.Padding.Left,
-                    Owner.ActualX, Owner.ActualY, Owner.Border.RadiusBottomLeft, Owner.Border.RadiusBottomRight,
-                    Owner.Border.RadiusTopLeft, Owner.Border.RadiusTopRight, Owner.Width, Owner.Height,BlurRadius,XOffset,YOffset }.ToString("|").ToIOSafeHash();
-                return Device.IO.GetTempRoot().GetFile($"{name}.png");
+                return new object[] {
+                    Owner.Margin.Top.CurrentValue,
+                    Owner.Margin.Left.CurrentValue,
+                    Owner.Parent.Padding.Top.CurrentValue,
+                    Owner.Parent.Padding.Left.CurrentValue,
+                    Owner.Border.RadiusBottomLeft,
+                    Owner.Border.RadiusBottomRight,
+                    Owner.Border.RadiusTopLeft,
+                    Owner.Border.RadiusTopRight,
+                    Owner.ActualWidth,
+                    Owner.ActualHeight,
+                    BlurRadius,
+                    XOffset,
+                    YOffset
+                }.ToString("|").ToIOSafeHash();
             }
         }
 
+        FileInfo CurrentFile => Device.IO.GetTempRoot().GetFile($"{CurrentFileName}.png");
+
         public BoxShadow() => Absolute = true;
+
         public View For
         {
             get => Owner;
@@ -60,13 +75,11 @@
                 return;
             }
 
-            if (!CurrentFile.Exists)
-                Visible = false;
+            Height.BindTo(Owner.Height, h => h + (BlurRadius + SHADOW_MARGIN) * 2);
+            Width.BindTo(Owner.Width, w => w + (BlurRadius + SHADOW_MARGIN) * 2);
 
-            // Attach to the owner:
             await SyncWithOwner();
-            Owner.X.Changed.Handle(SyncWithOwner);
-            Owner.Y.Changed.Handle(SyncWithOwner);
+
             Owner.Height.Changed.Handle(SyncWithOwner);
             Owner.Width.Changed.Handle(SyncWithOwner);
             Owner.VisibilityChanged.Handle(SyncWithOwner);
@@ -113,39 +126,23 @@
 
         async Task SyncWithOwner()
         {
-            var height = Height.CurrentValue;
-            var width = Width.CurrentValue;
-
-            Height.BindTo(Owner.Height, h => h + (BlurRadius + SHADOW_MARGIN) * 2);
-            Width.BindTo(Owner.Width, w => w + (BlurRadius + SHADOW_MARGIN) * 2);
-
-            if (IsRunning && (Math.Abs(height - Height.CurrentValue) > 2 || Math.Abs(width - Width.CurrentValue) > 2))
-                await IsEnd();
-            else if (IsRunning)
-                return;
-
-            IsRunning = true;
-
-            Opacity = Owner.Opacity;
-
             try
             {
                 if (Owner.Visible)
                 {
-                    var target = await CreateImageFile();
-                    BackgroundImagePath = target.FullName;
-
-                    await this.Animate(AnimationEasing.EaseIn, bx => bx.Visible(value: true));
+                    using (await RenderSyncLock.LockAsync())
+                    {
+                        if (RenderedShadows.None(x => x.Key == CurrentFileName))
+                        {
+                            var target = await CreateImageFile();
+                            ImageData = target.ReadAllBytes();
+                            RenderedShadows.Add(new KeyValuePair<string, byte[]>(CurrentFileName, ImageData));
+                        }
+                        else ImageData = RenderedShadows.FirstOrDefault(x => x.Key == CurrentFileName).Value;
+                    }
                 }
             }
             catch (Exception ex) { Device.Log.Error(ex.Message); }
-            IsRunning = false;
-        }
-
-        async Task IsEnd()
-        {
-            while (IsRunning)
-                await Task.Delay(25);
         }
 
         async Task<FileInfo> CreateImageFile()
