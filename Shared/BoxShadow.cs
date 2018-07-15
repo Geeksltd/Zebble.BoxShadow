@@ -116,6 +116,7 @@
 
         async Task SyncWithOwner()
         {
+            Visible = Owner.Visible;
             try
             {
                 using (await RenderSyncLock.LockAsync())
