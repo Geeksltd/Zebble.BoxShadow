@@ -8,16 +8,21 @@
 
     public partial class BoxShadow : ImageView
     {
-        const int SHADOW_MARGIN = 10;
-        const int TOP_LEFT = 0, TOP_RIGHT = 1, BOTTOM_RIGHT = 2, BOTTOM_LEFT = 3;
+        const int SHADOW_MARGIN = 10, TOP_LEFT = 0, TOP_RIGHT = 1, BOTTOM_RIGHT = 2, BOTTOM_LEFT = 3;
         const double FULL_CIRCLE_DEGREE = 360.0, HALF_CIRCLE_DEGREE = 180.0;
 
         View Owner;
-        readonly List<CornerPosition> DrawnCorners = new List<CornerPosition> { CornerPosition.None };
         int IncreaseValue;
-
-        static List<KeyValuePair<string, byte[]>> RenderedShadows = new List<KeyValuePair<string, byte[]>> { };
+        readonly List<CornerPosition> DrawnCorners = new List<CornerPosition> { CornerPosition.None };
+        static List<KeyValuePair<string, byte[]>> RenderedShadows = new List<KeyValuePair<string, byte[]>>();
         AsyncLock RenderSyncLock = new AsyncLock();
+
+        public BoxShadow()
+        {
+            Absolute = true;
+            Color = Colors.Gray;
+            BlurRadius = 3;
+        }
 
         string CurrentFileName
         {
@@ -43,8 +48,6 @@
 
         FileInfo CurrentFile => Device.IO.GetTempRoot().GetFile($"{CurrentFileName}.png");
 
-        public BoxShadow() => Absolute = true;
-
         public View For
         {
             get => Owner;
@@ -52,18 +55,19 @@
             {
                 if (Owner == value) return;
                 if (Owner != null)
-                {
                     Device.Log.Error("Shadow.For cannot be changed once it's set.");
-                    return;
-                }
-
-                Owner = value;
+                else
+                    Owner = value;
             }
         }
-        public Color Color { get; set; } = Colors.Gray;
-        public int XOffset { get; set; } = 0;
-        public int YOffset { get; set; } = 0;
-        public int BlurRadius { get; set; } = 3;
+
+        public Color Color { get; set; }
+
+        public int XOffset { get; set; }
+
+        public int YOffset { get; set; }
+
+        public int BlurRadius { get; set; }
 
         public override async Task OnPreRender()
         {
@@ -83,20 +87,6 @@
             Owner.Height.Changed.Handle(SyncWithOwner);
             Owner.Width.Changed.Handle(SyncWithOwner);
             Owner.VisibilityChanged.Handle(SyncWithOwner);
-        }
-
-        public override async Task OnInitialized()
-        {
-            await WhenShown(() =>
-            {
-                Thread.UI.Run(() =>
-                {
-#if UWP
-                    var native = this.Native();
-                    native.IsHitTestVisible = false;
-#endif
-                });
-            });
         }
 
         public async override Task OnRendered()
@@ -128,18 +118,15 @@
         {
             try
             {
-                if (Owner.Visible)
+                using (await RenderSyncLock.LockAsync())
                 {
-                    using (await RenderSyncLock.LockAsync())
+                    if (RenderedShadows.None(x => x.Key == CurrentFileName))
                     {
-                        if (RenderedShadows.None(x => x.Key == CurrentFileName))
-                        {
-                            var target = await CreateImageFile();
-                            ImageData = target.ReadAllBytes();
-                            RenderedShadows.Add(new KeyValuePair<string, byte[]>(CurrentFileName, ImageData));
-                        }
-                        else ImageData = RenderedShadows.FirstOrDefault(x => x.Key == CurrentFileName).Value;
+                        var target = await CreateImageFile();
+                        ImageData = target.ReadAllBytes();
+                        RenderedShadows.Add(new KeyValuePair<string, byte[]>(CurrentFileName, ImageData));
                     }
+                    else ImageData = RenderedShadows.FirstOrDefault(x => x.Key == CurrentFileName).Value;
                 }
             }
             catch (Exception ex) { Device.Log.Error(ex.Message); }

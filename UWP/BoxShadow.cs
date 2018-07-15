@@ -11,6 +11,18 @@
 
     public partial class BoxShadow
     {
+        public override async Task OnInitialized()
+        {
+            await WhenShown(() =>
+            {
+                Thread.UI.Run(() =>
+                {
+                    var native = this.Native();
+                    native.IsHitTestVisible = false;
+                });
+            });
+        }
+
         public Task<FileInfo> SaveAsPng(int width, int height, Color[] colors)
         {
             return Thread.UI.Run(async () =>
@@ -19,11 +31,12 @@
 
                 var imageArray = colors.ToByteArray(width, height);
 
-                using (Stream stream = bitmap.PixelBuffer.AsStream()) await stream.WriteAsync(imageArray, 0, imageArray.Length);
+                using (var stream = bitmap.PixelBuffer.AsStream())
+                    await stream.WriteAsync(imageArray, 0, imageArray.Length);
 
                 var destFile = await ApplicationData.Current.TemporaryFolder.CreateFileAsync(CurrentFile.Name);
 
-                using (IRandomAccessStream stream = await destFile.OpenAsync(FileAccessMode.ReadWrite))
+                using (var stream = await destFile.OpenAsync(FileAccessMode.ReadWrite))
                 {
                     var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
                     var pixelStream = bitmap.PixelBuffer.AsStream();

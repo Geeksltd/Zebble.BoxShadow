@@ -41,13 +41,14 @@
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>..\lib\</OutputPath>
     <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
-    <NoWarn>;2008;1998</NoWarn>
+    <NoWarn>;2008;1998;1591</NoWarn>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
     <GenerateLibraryLayout>false</GenerateLibraryLayout>
     <DocumentationFile>..\lib\Zebble.BoxShadow.UWP.XML</DocumentationFile>
+    <SuppressXamlWarnings />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
