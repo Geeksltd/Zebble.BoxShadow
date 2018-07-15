@@ -83,6 +83,7 @@
 
             return sizes;
         }
+
         static void GaussBlur(byte[] scl, byte[] tcl, int width, int height, double radius)
         {
             var bxs = BoxesForGauss(radius, 3);
@@ -90,12 +91,14 @@
             BoxBlur(tcl, scl, width, height, (bxs[1] - 1) / 2);
             BoxBlur(scl, tcl, width, height, (bxs[2] - 1) / 2);
         }
+
         static void BoxBlur(byte[] scl, byte[] tcl, int width, int height, double radius)
         {
             for (var i = 0; i < scl.Length; i++) tcl[i] = scl[i];
             BoxBlurH(tcl, scl, width, height, radius);
             BoxBlurT(scl, tcl, width, height, radius);
         }
+
         static void BoxBlurH(byte[] scl, byte[] tcl, int width, int height, double radius)
         {
             var iarr = 1 / (radius + radius + 1);

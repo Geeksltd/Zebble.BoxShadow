@@ -19,7 +19,6 @@ namespace Zebble
                 .On(x => x.OpacityChanged, setVisibility)
                 .On(x => x.ZIndexChanged, setVisibility);
 
-
             owner.WhenShown(() =>
             {
                 if (owner.Id == null) throw new System.Exception("The owner of shadow should have unique identification");
@@ -41,8 +40,6 @@ namespace Zebble
                     shadow.For.Parent.Add(shadow);
                     if (shadow.For.Parent is Canvas)
                         (shadow.For.Parent as Canvas).ClipChildren = false;
-
-
                 }
             });
         }
