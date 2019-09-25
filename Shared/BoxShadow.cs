@@ -29,6 +29,7 @@
             get
             {
                 return new object[] {
+                    Id,
                     Owner.Margin.Top.CurrentValue,
                     Owner.Margin.Left.CurrentValue,
                     Owner.Parent.Padding.Top.CurrentValue,

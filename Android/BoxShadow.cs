@@ -21,7 +21,7 @@
             var stream = new MemoryStream();
             bitmap.Compress(Bitmap.CompressFormat.Png, 0, stream);
 
-            using (var filestream = CurrentFile.OpenWrite())
+            using (var filestream = CurrentFile.Create())
             {
                 if (bitmap.Compress(Bitmap.CompressFormat.Png, 0, filestream))
                 {
