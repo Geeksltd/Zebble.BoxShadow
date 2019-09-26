@@ -9,12 +9,13 @@
 
     public partial class BoxShadow : ImageView
     {
+        const string AlgorithmVersion = "v3";
+
         const int SHADOW_MARGIN = 10, TOP_LEFT = 0, TOP_RIGHT = 1, BOTTOM_RIGHT = 2, BOTTOM_LEFT = 3;
         const double FULL_CIRCLE_DEGREE = 360.0, HALF_CIRCLE_DEGREE = 180.0;
         static ConcurrentDictionary<string, AsyncLock> CreationLocks = new ConcurrentDictionary<string, AsyncLock>();
         static List<KeyValuePair<string, byte[]>> RenderedShadows = new List<KeyValuePair<string, byte[]>>();
         View Owner;
-        int IncreaseValue;
         readonly List<CornerPosition> DrawnCorners = new List<CornerPosition> { CornerPosition.None };
         AsyncLock RenderSyncLock = new AsyncLock();
 
@@ -30,6 +31,7 @@
             get
             {
                 return new object[] {
+                    AlgorithmVersion,
                     Id,
                     Owner.Margin.Top.CurrentValue,
                     Owner.Margin.Left.CurrentValue,
@@ -96,25 +98,11 @@
 
         public async override Task OnRendered()
         {
-            X.BindTo(Owner.X, Owner.Margin.Left, Owner.Parent.Padding.Left, (x, oml, opl) =>
-            {
-                var value = (x - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Left + XOffset;
+            X.BindTo(Owner.X, Owner.Margin.Left, Owner.Parent.Padding.Left, (x, a, b) =>
+                 x + XOffset + a + b - (SHADOW_MARGIN + BlurRadius + Owner.Border.Left)
+            );
 
-                if (Owner.Absolute) value += oml;
-                else value += oml + opl;
-
-                return value;
-            });
-
-            Y.BindTo(Owner.Y, Owner.Margin.Top, Owner.Parent.Padding.Top, (y, omt, opt) =>
-            {
-                var value = (y - (SHADOW_MARGIN + BlurRadius)) + Owner.Border.Top + YOffset;
-
-                if (Owner.Absolute) value += omt;
-                else value += omt + opt;
-
-                return value;
-            });
+            Y.BindTo(Owner.Y, y => y + YOffset - (SHADOW_MARGIN + BlurRadius + Owner.Border.Top));
 
             await base.OnRendered();
         }
@@ -209,35 +197,35 @@
                     resutl = new Rec
                     {
                         StartX = SHADOW_MARGIN,
-                        EndX = IncreaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft / 2,
+                        EndX = SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft / 2,
                         StartY = SHADOW_MARGIN,
-                        EndY = IncreaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft / 2
+                        EndY = SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft / 2
                     };
                     break;
                 case CornerPosition.TopRight:
                     resutl = new Rec
                     {
-                        StartX = (width - SHADOW_MARGIN) - IncreaseValue - (int)Owner.Border.RadiusTopRight / 2,
+                        StartX = (width - SHADOW_MARGIN) - (int)Owner.Border.RadiusTopRight / 2,
                         EndX = width,
                         StartY = SHADOW_MARGIN,
-                        EndY = IncreaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusTopRight / 2
+                        EndY = SHADOW_MARGIN + (int)Owner.Border.RadiusTopRight / 2
                     };
                     break;
                 case CornerPosition.BottomLeft:
                     resutl = new Rec
                     {
                         StartX = SHADOW_MARGIN,
-                        EndX = IncreaseValue + SHADOW_MARGIN + (int)Owner.Border.RadiusBottomLeft / 2,
-                        StartY = (height - SHADOW_MARGIN) - IncreaseValue - (int)Owner.Border.RadiusBottomLeft / 2,
+                        EndX = SHADOW_MARGIN + (int)Owner.Border.RadiusBottomLeft / 2,
+                        StartY = (height - SHADOW_MARGIN) - (int)Owner.Border.RadiusBottomLeft / 2,
                         EndY = height - SHADOW_MARGIN
                     };
                     break;
                 case CornerPosition.BottomRight:
                     resutl = new Rec
                     {
-                        StartX = (width - SHADOW_MARGIN) - IncreaseValue - (int)Owner.Border.RadiusBottomRight / 2,
+                        StartX = (width - SHADOW_MARGIN) - (int)Owner.Border.RadiusBottomRight / 2,
                         EndX = width - SHADOW_MARGIN,
-                        StartY = (height - SHADOW_MARGIN) - IncreaseValue - (int)Owner.Border.RadiusBottomRight / 2,
+                        StartY = (height - SHADOW_MARGIN) - (int)Owner.Border.RadiusBottomRight / 2,
                         EndY = height - SHADOW_MARGIN
                     };
                     break;
@@ -459,46 +447,24 @@
 
         int GetStrokeByPosition(CornerPosition position)
         {
-            int result;
             switch (position)
             {
-                case CornerPosition.TopLeft:
-                    result = IncreaseValue + (int)Owner.Border.RadiusTopLeft;
-                    break;
-                case CornerPosition.TopRight:
-                    result = IncreaseValue + (int)Owner.Border.RadiusTopRight;
-                    break;
-                case CornerPosition.BottomRight:
-                    result = IncreaseValue + (int)Owner.Border.RadiusBottomRight - 1;
-                    break;
-                default:
-                    result = IncreaseValue + (int)Owner.Border.RadiusBottomLeft;
-                    break;
+                case CornerPosition.TopLeft: return (int)Owner.Border.RadiusTopLeft;
+                case CornerPosition.TopRight: return (int)Owner.Border.RadiusTopRight;
+                case CornerPosition.BottomRight: return (int)Owner.Border.RadiusBottomRight - 1;
+                default: return (int)Owner.Border.RadiusBottomLeft;
             }
-
-            return result;
         }
 
         float GetRadiusByPosition(CornerPosition position)
         {
-            float result;
             switch (position)
             {
-                case CornerPosition.TopLeft:
-                    result = Owner.Border.RadiusTopLeft;
-                    break;
-                case CornerPosition.TopRight:
-                    result = Owner.Border.RadiusTopRight;
-                    break;
-                case CornerPosition.BottomRight:
-                    result = Owner.Border.RadiusBottomRight;
-                    break;
-                default:
-                    result = Owner.Border.RadiusBottomLeft;
-                    break;
+                case CornerPosition.TopLeft: return Owner.Border.RadiusTopLeft;
+                case CornerPosition.TopRight: return Owner.Border.RadiusTopRight;
+                case CornerPosition.BottomRight: return Owner.Border.RadiusBottomRight;
+                default: return Owner.Border.RadiusBottomLeft;
             }
-
-            return result;
         }
     }
 
