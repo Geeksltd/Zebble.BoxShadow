@@ -1,6 +1,7 @@
 ﻿namespace Zebble
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -10,11 +11,11 @@
     {
         const int SHADOW_MARGIN = 10, TOP_LEFT = 0, TOP_RIGHT = 1, BOTTOM_RIGHT = 2, BOTTOM_LEFT = 3;
         const double FULL_CIRCLE_DEGREE = 360.0, HALF_CIRCLE_DEGREE = 180.0;
-
+        static ConcurrentDictionary<string, AsyncLock> CreationLocks = new ConcurrentDictionary<string, AsyncLock>();
+        static List<KeyValuePair<string, byte[]>> RenderedShadows = new List<KeyValuePair<string, byte[]>>();
         View Owner;
         int IncreaseValue;
         readonly List<CornerPosition> DrawnCorners = new List<CornerPosition> { CornerPosition.None };
-        static List<KeyValuePair<string, byte[]>> RenderedShadows = new List<KeyValuePair<string, byte[]>>();
         AsyncLock RenderSyncLock = new AsyncLock();
 
         public BoxShadow()
@@ -40,6 +41,7 @@
                     Owner.Border.RadiusTopRight,
                     Owner.ActualWidth,
                     Owner.ActualHeight,
+                    Expand,
                     BlurRadius,
                     XOffset,
                     YOffset
@@ -47,7 +49,7 @@
             }
         }
 
-        FileInfo CurrentFile => Device.IO.GetTempRoot().GetFile($"{CurrentFileName}.png");
+        FileInfo CurrentFile => Device.IO.Directory("zebble-box-shadow").EnsureExists().GetFile(CurrentFileName + ".png");
 
         public View For
         {
@@ -68,6 +70,8 @@
 
         public int YOffset { get; set; }
 
+        public int Expand { get; set; }
+
         public int BlurRadius { get; set; }
 
         public override async Task OnPreRender()
@@ -80,8 +84,8 @@
                 return;
             }
 
-            Height.BindTo(Owner.Height, h => h + (BlurRadius + SHADOW_MARGIN) * 2);
-            Width.BindTo(Owner.Width, w => w + (BlurRadius + SHADOW_MARGIN) * 2);
+            Height.BindTo(Owner.Height, h => h + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2);
+            Width.BindTo(Owner.Width, w => w + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2);
 
             await SyncWithOwner();
 
@@ -136,21 +140,47 @@
 
         async Task<FileInfo> CreateImageFile()
         {
-            if (CurrentFile.Exists) return CurrentFile;
+            var file = CurrentFile;
 
-            var height = (int)Height.CurrentValue;
+            if (!file.Exists())
+            {
+                var creationLock = CreationLocks.GetOrAdd(file.FullName, x => new AsyncLock());
+
+                using (await creationLock.LockAsync())
+                    if (!file.Exists()) await DoCreateImageFile();
+            }
+
+            return file;
+        }
+
+        async Task DoCreateImageFile()
+        {
             var width = (int)Width.CurrentValue;
+            var height = (int)Height.CurrentValue;
 
-            var length = height * width;
-            var colors = Enumerable.Repeat(Colors.Transparent, length).ToArray();
+            var colors = await CreateMatrixColours(width, height);
 
-            var borderRadius = new float[] { Owner.Border.RadiusTopLeft, Owner.Border.RadiusTopRight, Owner.Border.RadiusBottomRight, Owner.Border.RadiusBottomLeft };
+            var imageData = await SaveAsPng(width, height, colors).DropContext();
+            await CurrentFile.WriteAllBytesAsync(imageData);
+        }
+
+        async Task<Color[]> CreateMatrixColours(int width, int height)
+        {
+            var colors = Enumerable.Repeat(Colors.Transparent, height * width).ToArray();
+
+            var borderRadius = new float[] {
+                Owner.Border.RadiusTopLeft,
+                Owner.Border.RadiusTopRight,
+                Owner.Border.RadiusBottomRight,
+                Owner.Border.RadiusBottomLeft
+            };
+
             if (borderRadius.Sum() != 0)
             {
                 var ownerWidth = Owner.Width.CurrentValue;
                 var ownerHeight = Owner.Height.CurrentValue;
 
-                if (borderRadius.Distinct().IsSingle() && ownerWidth.AlmostEquals(ownerHeight) && (int)borderRadius.First() == ownerWidth / 2)
+                if (borderRadius.Distinct().IsSingle() && ownerWidth.AlmostEquals(ownerHeight) && (int)borderRadius[0] == ownerWidth / 2)
                 {
                     var stroke = GetStrokeByPosition(CornerPosition.TopLeft);
                     await DrawCircle(colors, stroke, width, height / 2);
@@ -160,23 +190,17 @@
                     await DrawRectangle(colors, width, height, borderRadius);
 
                     if (ownerHeight > ownerWidth || ownerWidth > ownerHeight)
-                    {
                         await DrawCylinder(colors, width, height, borderRadius);
-                    }
                     else
-                    {
                         await DrawCornerCirlcles(colors, width, height);
-                    }
                 }
             }
             else await DrawRectangle(colors, width, height, borderRadius);
 
-            colors = GaussianBlur.Blur(colors, width, height, BlurRadius);
-
-            return await SaveAsPng(width, height, colors);
+            return GaussianBlur.Blur(colors, width, height, BlurRadius);
         }
 
-        Task<Rec> GetCorner(int width, int height, CornerPosition corner)
+        Rec GetCorner(int width, int height, CornerPosition corner)
         {
             Rec resutl = null;
             switch (corner)
@@ -220,21 +244,31 @@
                 default: break;
             }
 
-            return Task.FromResult(resutl);
+            return resutl;
         }
 
         async Task DrawRectangle(Color[] colors, int width, int height, float[] borderRadius)
         {
-            var topLeft = await GetCorner(width, height, CornerPosition.TopLeft);
-            var topRight = await GetCorner(width, height, CornerPosition.TopRight);
-            var bottomLeft = await GetCorner(width, height, CornerPosition.BottomLeft);
-            var bottomRight = await GetCorner(width, height, CornerPosition.BottomRight);
+            var topLeft = GetCorner(width, height, CornerPosition.TopLeft);
+            var topRight = GetCorner(width, height, CornerPosition.TopRight);
+            var bottomLeft = GetCorner(width, height, CornerPosition.BottomLeft);
+            var bottomRight = GetCorner(width, height, CornerPosition.BottomRight);
 
-            for (var y = SHADOW_MARGIN; y < height - SHADOW_MARGIN; y++)
-                for (var x = SHADOW_MARGIN; x < width - SHADOW_MARGIN; x++)
+            var minY = SHADOW_MARGIN;
+            var maxY = height - SHADOW_MARGIN;
+            if (Expand < 0) { minY -= Expand; maxY += Expand; }
+
+            var minX = SHADOW_MARGIN;
+            var maxX = width - SHADOW_MARGIN;
+            if (Expand < 0) { minX -= Expand; maxX += Expand; }
+
+            var hasBorder = borderRadius.Sum() != 0;
+
+            for (var y = minY; y < maxY; y++)
+                for (var x = minX; x < maxX; x++)
                 {
                     var index = Math.Abs(y * width + x);
-                    if (borderRadius.Sum() != 0)
+                    if (hasBorder)
                     {
                         if ((x >= topLeft.StartX && x <= SHADOW_MARGIN + borderRadius[TOP_LEFT] - 1) &&
                             (y >= topLeft.StartY && y <= SHADOW_MARGIN + borderRadius[TOP_LEFT]))
@@ -308,7 +342,7 @@
 
             if (centerY == -1) centerY = centerX;
 
-            for (int j = 1; j < stroke; j++)
+            for (var j = 1; j < stroke; j++)
             {
                 circles += 1;
                 for (var i = startDegree; i < endDegree; i += 0.1)

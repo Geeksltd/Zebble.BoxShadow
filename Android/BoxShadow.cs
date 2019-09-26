@@ -7,33 +7,30 @@
 
     public partial class BoxShadow
     {
-        public async Task<FileInfo> SaveAsPng(int width, int height, Color[] colors)
+        public async Task<byte[]> SaveAsPng(int width, int height, Color[] colors)
         {
-            var bitmap = Bitmap.CreateBitmap(width, height, Bitmap.Config.Argb8888);
-
-            for (var y = 0; y < height; y++)
-                for (var x = 0; x < width; x++)
-                {
-                    var index = y * width + x;
-                    bitmap.SetPixel(x, y, colors[index].Render());
-                }
-
-            var stream = new MemoryStream();
-            bitmap.Compress(Bitmap.CompressFormat.Png, 0, stream);
-
-            using (var filestream = CurrentFile.Create())
+            byte[] result;
+            using (var bitmap = Bitmap.CreateBitmap(width, height, Bitmap.Config.Argb8888))
             {
-                if (bitmap.Compress(Bitmap.CompressFormat.Png, 0, filestream))
+                for (var y = 0; y < height; y++)
+                    for (var x = 0; x < width; x++)
+                        bitmap.SetPixel(x, y, colors[y * width + x].Render());
+
+                using (var stream = new MemoryStream())
                 {
-                    filestream.Flush();
+                    bitmap.Compress(Bitmap.CompressFormat.Png, 0, stream);
+
+                    using (var output = new MemoryStream())
+                    {
+                        bitmap.Compress(Bitmap.CompressFormat.Png, 0, output);
+                        result = output.ReadAllBytes();
+                    }
+
+                    bitmap.Recycle();
                 }
-                else { }
             }
 
-            bitmap.Recycle();
-            bitmap.Dispose();
-
-            return CurrentFile;
+            return result;
         }
     }
 }

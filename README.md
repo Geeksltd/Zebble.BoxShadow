@@ -27,7 +27,7 @@ To add shadow to the Views you can use below code:
 ```csharp
 public override async Task OnInitialized()
 {
-	myLabel.BoxShadow(1,1,1,Color.Red);
+	myLabel.BoxShadow(xOffset: 0, yOffset: 0, blurRadius: 7, expand: -5, color: Colors.DarkGray);	
 }
 ```
 

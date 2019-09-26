@@ -8,7 +8,7 @@
 
     public partial class BoxShadow
     {
-        public Task<FileInfo> SaveAsPng(int imageWidth, int imageHeight, Color[] colors)
+        public Task<byte[]> SaveAsPng(int imageWidth, int imageHeight, Color[] colors)
         {
             return Thread.UI.Run(async () =>
             {
@@ -19,9 +19,7 @@
                     System.Runtime.InteropServices.Marshal.Copy(imageData.Bytes, myByteArray, 0,
                         Convert.ToInt32(imageData.Length));
 
-                    await CurrentFile.WriteAllBytesAsync(myByteArray);
-
-                    return CurrentFile;
+                    return myByteArray;
                 }
             });
         }
@@ -31,9 +29,9 @@
             UIGraphics.BeginImageContextWithOptions(new CGSize(width, height), opaque: false, scale: 0.0f);
             var context = UIGraphics.GetCurrentContext();
 
-            for (int y = 0; y < height; y++)
+            for (var y = 0; y < height; y++)
             {
-                for (int x = 0; x < width; x++)
+                for (var x = 0; x < width; x++)
                 {
                     var index = y * width + x;
                     var cgColor = color[index].Render().CGColor;

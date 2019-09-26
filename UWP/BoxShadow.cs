@@ -23,7 +23,7 @@
             });
         }
 
-        public Task<FileInfo> SaveAsPng(int width, int height, Color[] colors)
+        public Task<byte[]> SaveAsPng(int width, int height, Color[] colors)
         {
             return Thread.UI.Run(async () =>
             {
@@ -34,7 +34,7 @@
                 using (var stream = bitmap.PixelBuffer.AsStream())
                     await stream.WriteAsync(imageArray, 0, imageArray.Length);
 
-                var destFile = await ApplicationData.Current.TemporaryFolder.CreateFileAsync(CurrentFile.Name);
+                var destFile = await ApplicationData.Current.TemporaryFolder.CreateFileAsync(Guid.NewGuid() + ".png");
 
                 using (var stream = await destFile.OpenAsync(FileAccessMode.ReadWrite))
                 {
@@ -48,9 +48,10 @@
                     await encoder.FlushAsync();
                 }
 
-                await CurrentFile.WriteAllBytesAsync(await destFile.ReadAllBytes());
+                var result = await destFile.ReadAllBytes();
                 await destFile.DeleteAsync();
-                return CurrentFile;
+
+                return result;
             });
         }
     }
