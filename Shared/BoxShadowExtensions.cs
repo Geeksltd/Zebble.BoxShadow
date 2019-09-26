@@ -4,7 +4,8 @@ namespace Zebble
 {
     public static class BoxShadowExtensions
     {
-        public static void BoxShadow(this View owner, int xOffset = 0, int yOffset = 0, int blurRadius = 3, int expand = 0, Color color = null)
+        public static void BoxShadow(this View owner, int xOffset = 0, int yOffset = 0, int blurRadius = 7, int expand = -5,
+            Color color = null)
         {
             BoxShadow shadow = null;
 
@@ -33,7 +34,7 @@ namespace Zebble
                         Expand = expand,
                         XOffset = xOffset,
                         YOffset = yOffset,
-                        Color = color ?? Colors.Gray,
+                        Color = color ?? Colors.DarkGray,
                         Id = id,
                         ZIndex = owner.ZIndex - 1
                     };
