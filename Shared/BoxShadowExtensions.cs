@@ -25,24 +25,22 @@ namespace Zebble
                 if (owner.Id == null) throw new System.Exception("The owner of shadow should have unique identification");
 
                 var id = $"{owner.Id}BoxShadow";
-                if (!Nav.CurrentPage.AllChildren.Any(rec => rec.Id == id))
-                {
-                    shadow = new BoxShadow
-                    {
-                        For = owner,
-                        BlurRadius = blurRadius,
-                        Expand = expand,
-                        XOffset = xOffset,
-                        YOffset = yOffset,
-                        Color = color ?? Colors.DarkGray,
-                        Id = id,
-                        ZIndex = owner.ZIndex - 1
-                    };
+                if (Nav.CurrentPage.AllChildren.Any(rec => rec.Id == id)) return; // Already added
 
-                    shadow.For.Parent.Add(shadow);
-                    if (shadow.For.Parent is Canvas)
-                        (shadow.For.Parent as Canvas).ClipChildren = false;
-                }
+                shadow = new BoxShadow
+                {
+                    For = owner,
+                    BlurRadius = blurRadius,
+                    Expand = expand,
+                    XOffset = xOffset,
+                    YOffset = yOffset,
+                    Color = color ?? Colors.DarkGray,
+                    Id = id,
+                    ZIndex = owner.ZIndex - 1
+                };
+
+                shadow.For.Parent.Add(shadow);
+                if (shadow.For.Parent is Canvas canvas) canvas.ClipChildren = false;
             });
         }
 

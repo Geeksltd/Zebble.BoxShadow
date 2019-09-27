@@ -9,7 +9,7 @@
 
     public partial class BoxShadow : ImageView
     {
-        const string AlgorithmVersion = "v3";
+        const string AlgorithmVersion = "v4";
 
         const int SHADOW_MARGIN = 10, TOP_LEFT = 0, TOP_RIGHT = 1, BOTTOM_RIGHT = 2, BOTTOM_LEFT = 3;
         const double FULL_CIRCLE_DEGREE = 360.0, HALF_CIRCLE_DEGREE = 180.0;
@@ -30,28 +30,22 @@
         {
             get
             {
-                return new object[] {
-                    AlgorithmVersion,
-                    Id,
-                    Owner.Margin.Top.CurrentValue,
-                    Owner.Margin.Left.CurrentValue,
-                    Owner.Parent.Padding.Top.CurrentValue,
-                    Owner.Parent.Padding.Left.CurrentValue,
-                    Owner.Border.RadiusBottomLeft,
-                    Owner.Border.RadiusBottomRight,
-                    Owner.Border.RadiusTopLeft,
-                    Owner.Border.RadiusTopRight,
-                    Owner.ActualWidth,
-                    Owner.ActualHeight,
-                    Expand,
-                    BlurRadius,
-                    XOffset,
-                    YOffset
-                }.ToString("|").ToIOSafeHash();
+                var size = $"{Owner.ActualWidth}x{Owner.ActualHeight}";
+                var shadow = $"s{XOffset},{YOffset},{BlurRadius},{Expand}";
+                var border = Owner.Border.Get(b => $"b{b.RadiusTopLeft},{b.RadiusTopRight},{b.RadiusBottomRight},{b.RadiusBottomLeft}");
+
+                var margin = Owner.Margin;
+                var padding = Owner.Parent.Padding;
+
+                var position = $"p{margin.Top.CurrentValue},{margin.Left.CurrentValue},{padding.Top.CurrentValue},{padding.Left.CurrentValue}";
+
+                return $"{size}  {shadow}  {border}  {position}";
             }
         }
 
-        FileInfo CurrentFile => Device.IO.Directory("zebble-box-shadow").EnsureExists().GetFile(CurrentFileName + ".png");
+        DirectoryInfo Folder => Device.IO.Directory($"zebble-box-shadow\\{AlgorithmVersion}-{Id}");
+
+        FileInfo CurrentFile => Folder.EnsureExists().GetFile(CurrentFileName + ".png");
 
         public View For
         {
@@ -99,7 +93,7 @@
         public async override Task OnRendered()
         {
             X.BindTo(Owner.X, Owner.Margin.Left, Owner.Parent.Padding.Left, (x, a, b) =>
-                 x + XOffset + a + b - (SHADOW_MARGIN + BlurRadius + Owner.Border.Left)
+                Math.Max(x, a) + XOffset + b - (SHADOW_MARGIN + BlurRadius + Owner.Border.Left)
             );
 
             Y.BindTo(Owner.Y, y => y + YOffset - (SHADOW_MARGIN + BlurRadius + Owner.Border.Top));
@@ -196,37 +190,37 @@
                 case CornerPosition.TopLeft:
                     resutl = new Rec
                     {
-                        StartX = SHADOW_MARGIN,
-                        EndX = SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft / 2,
-                        StartY = SHADOW_MARGIN,
-                        EndY = SHADOW_MARGIN + (int)Owner.Border.RadiusTopLeft / 2
+                        StartX = SHADOW_MARGIN - Expand,
+                        StartY = SHADOW_MARGIN - Expand,
+                        EndX = SHADOW_MARGIN - Expand + (int)Owner.Border.RadiusTopLeft / 2,
+                        EndY = SHADOW_MARGIN - Expand + (int)Owner.Border.RadiusTopLeft / 2
                     };
                     break;
                 case CornerPosition.TopRight:
                     resutl = new Rec
                     {
-                        StartX = (width - SHADOW_MARGIN) - (int)Owner.Border.RadiusTopRight / 2,
-                        EndX = width,
-                        StartY = SHADOW_MARGIN,
-                        EndY = SHADOW_MARGIN + (int)Owner.Border.RadiusTopRight / 2
+                        StartX = width - SHADOW_MARGIN + Expand - (int)Owner.Border.RadiusTopRight / 2,
+                        StartY = SHADOW_MARGIN - Expand,
+                        EndX = width + Expand,
+                        EndY = SHADOW_MARGIN - Expand + (int)Owner.Border.RadiusTopRight / 2
                     };
                     break;
                 case CornerPosition.BottomLeft:
                     resutl = new Rec
                     {
-                        StartX = SHADOW_MARGIN,
-                        EndX = SHADOW_MARGIN + (int)Owner.Border.RadiusBottomLeft / 2,
-                        StartY = (height - SHADOW_MARGIN) - (int)Owner.Border.RadiusBottomLeft / 2,
-                        EndY = height - SHADOW_MARGIN
+                        StartX = SHADOW_MARGIN - Expand,
+                        StartY = height - SHADOW_MARGIN + Expand - (int)Owner.Border.RadiusBottomLeft / 2,
+                        EndX = SHADOW_MARGIN - Expand + (int)Owner.Border.RadiusBottomLeft / 2,
+                        EndY = height - SHADOW_MARGIN + Expand
                     };
                     break;
                 case CornerPosition.BottomRight:
                     resutl = new Rec
                     {
-                        StartX = (width - SHADOW_MARGIN) - (int)Owner.Border.RadiusBottomRight / 2,
-                        EndX = width - SHADOW_MARGIN,
-                        StartY = (height - SHADOW_MARGIN) - (int)Owner.Border.RadiusBottomRight / 2,
-                        EndY = height - SHADOW_MARGIN
+                        StartX = width - SHADOW_MARGIN + Expand - (int)Owner.Border.RadiusBottomRight / 2,
+                        StartY = height - SHADOW_MARGIN + Expand - (int)Owner.Border.RadiusBottomRight / 2,
+                        EndX = width - SHADOW_MARGIN + Expand,
+                        EndY = height - SHADOW_MARGIN + Expand
                     };
                     break;
                 default: break;
@@ -296,16 +290,16 @@
             switch (cornerPosition)
             {
                 case CornerPosition.TopLeft:
-                    await DrawCircle(source, radius, width, SHADOW_MARGIN + radius, -1, 180.0, 270.0);
+                    await DrawCircle(source, radius, width, SHADOW_MARGIN - Expand + radius, -1, 180.0, 270.0);
                     break;
                 case CornerPosition.TopRight:
-                    await DrawCircle(source, radius, width, width - (SHADOW_MARGIN + radius), SHADOW_MARGIN + radius, 270.0, 360.0);
+                    await DrawCircle(source, radius, width, width - SHADOW_MARGIN - radius + Expand, SHADOW_MARGIN + radius - Expand, 270.0, 360.0);
                     break;
                 case CornerPosition.BottomRight:
-                    await DrawCircle(source, radius, width, width - (SHADOW_MARGIN + radius), height - (SHADOW_MARGIN + radius), 0.0, 90.0);
+                    await DrawCircle(source, radius, width, width - SHADOW_MARGIN - radius + Expand, height - SHADOW_MARGIN - radius + Expand, 0.0, 90.0);
                     break;
                 case CornerPosition.BottomLeft:
-                    await DrawCircle(source, radius, width, SHADOW_MARGIN + radius, height - (SHADOW_MARGIN + radius), 90.0, 180.0);
+                    await DrawCircle(source, radius, width, SHADOW_MARGIN + radius - Expand, height - SHADOW_MARGIN - radius + Expand, 90.0, 180.0);
                     break;
                 default: break;
             }
