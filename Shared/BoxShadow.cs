@@ -39,7 +39,9 @@
 
                 var position = $"p{margin.Top.CurrentValue},{margin.Left.CurrentValue},{padding.Top.CurrentValue},{padding.Left.CurrentValue}";
 
-                return $"{size}  {shadow}  {border}  {position}";
+                var color = Color.ToString().TrimStart("#");
+
+                return $"{size} {shadow} {border} {position} {color}";
             }
         }
 
