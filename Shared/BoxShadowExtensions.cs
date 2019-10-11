@@ -7,6 +7,10 @@ namespace Zebble
         public static void BoxShadow(this View owner, int xOffset = 0, int yOffset = 0, int blurRadius = 7, int expand = -5,
             Color color = null)
         {
+
+            if (owner.Width.CurrentValue == 0 || owner.Height.CurrentValue == 0)
+                return;
+
             BoxShadow shadow = null;
 
             async Task setVisibility()
@@ -39,7 +43,6 @@ namespace Zebble
                     ZIndex = owner.ZIndex - 1
                 };
 
-                shadow.For.Parent.Add(shadow);
                 if (shadow.For.Parent is Canvas canvas) canvas.ClipChildren = false;
             });
         }
