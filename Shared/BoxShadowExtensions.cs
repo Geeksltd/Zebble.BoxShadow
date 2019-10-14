@@ -7,31 +7,14 @@ namespace Zebble
         public static void BoxShadow(this View owner, int xOffset = 0, int yOffset = 0, int blurRadius = 7, int expand = -5,
             Color color = null)
         {
-
-            if (owner.Width.CurrentValue == 0 || owner.Height.CurrentValue == 0)
-                return;
-
-            BoxShadow shadow = null;
-
-            async Task setVisibility()
-            {
-                var isOwnerHidden = owner.Opacity == 0 || !owner.Visible || owner.ZIndex < 0 || owner.Ignored;
-                if (shadow != null)
-                    await shadow.WhenShown(() => shadow.Opacity(isOwnerHidden ? 0 : 1));
-            }
-
-            owner.On(x => x.VisibilityChanged, setVisibility)
-                .On(x => x.OpacityChanged, setVisibility)
-                .On(x => x.ZIndexChanged, setVisibility);
-
-            owner.WhenShown(() =>
+            owner.WhenShown(async () =>
             {
                 if (owner.Id == null) throw new System.Exception("The owner of shadow should have unique identification");
 
                 var id = $"{owner.Id}BoxShadow";
                 if (Nav.CurrentPage.AllChildren.Any(rec => rec.Id == id)) return; // Already added
 
-                shadow = new BoxShadow
+                var shadow = new BoxShadow
                 {
                     For = owner,
                     BlurRadius = blurRadius,
@@ -43,7 +26,9 @@ namespace Zebble
                     ZIndex = owner.ZIndex - 1
                 };
 
-                if (shadow.For.Parent is Canvas canvas) canvas.ClipChildren = false;
+                if (owner.Parent is Canvas canvas) canvas.ClipChildren = false;
+                await shadow.Draw();
+                await owner.Parent.AddBefore(owner, shadow);
             });
         }
 

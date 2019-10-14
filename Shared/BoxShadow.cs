@@ -9,7 +9,7 @@
 
     public partial class BoxShadow : ImageView
     {
-        const string AlgorithmVersion = "v4";
+        const string AlgorithmVersion = "v5";
 
         const int SHADOW_MARGIN = 10, TOP_LEFT = 0, TOP_RIGHT = 1, BOTTOM_RIGHT = 2, BOTTOM_LEFT = 3;
         const double FULL_CIRCLE_DEGREE = 360.0, HALF_CIRCLE_DEGREE = 180.0;
@@ -55,10 +55,8 @@
             set
             {
                 if (Owner == value) return;
-                if (Owner != null)
-                    Device.Log.Error("Shadow.For cannot be changed once it's set.");
-                else
-                    Owner = value;
+                if (Owner != null) Device.Log.Error("Shadow.For cannot be changed once it's set.");
+                else Owner = value;
             }
         }
 
@@ -72,24 +70,27 @@
 
         public int BlurRadius { get; set; }
 
-        public override async Task OnPreRender()
+        public async Task Draw()
         {
-            await base.OnPreRender();
-
-            if (Owner == null)
-            {
-                Device.Log.Error("'For' should be specified for a Shadow.");
-                return;
-            }
-
-            Height.BindTo(Owner.Height, h => h + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2);
-            Width.BindTo(Owner.Width, w => w + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2);
-
+            BindToOwner();
             await SyncWithOwner();
 
             Owner.Height.Changed.Handle(SyncWithOwner);
             Owner.Width.Changed.Handle(SyncWithOwner);
             Owner.VisibilityChanged.Handle(SyncWithOwner);
+        }
+
+        void BindToOwner()
+        {
+            Owner.VisibilityChanged.Handle(() => Visible = Owner.Visible);
+            Owner.IgnoredChanged.Handle(() => Ignored = Owner.Ignored);
+            Owner.OpacityChanged.Handle(() => Opacity = Owner.Opacity);
+            Owner.ZIndexChanged.Handle(() => ZIndex = Owner.ZIndex - 1);
+
+            Height.BindTo(Owner.Height, h => h + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2);
+            Width.BindTo(Owner.Width, w => w + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2);
+            Y.BindTo(Owner.Y, y => y - (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)));
+            X.BindTo(Owner.X, x => x - (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)));
         }
 
         public async override Task OnRendered()
@@ -108,18 +109,33 @@
             Visible = Owner.Visible;
             try
             {
+                if (LoadRenderedImage()) return;
+
                 using (await RenderSyncLock.LockAsync())
                 {
-                    if (RenderedShadows.None(x => x.Key == CurrentFileName))
+                    if (!LoadRenderedImage())
                     {
                         var target = await CreateImageFile();
                         ImageData = target.ReadAllBytes();
-                        RenderedShadows.Add(new KeyValuePair<string, byte[]>(CurrentFileName, ImageData));
                     }
-                    else ImageData = RenderedShadows.FirstOrDefault(x => x.Key == CurrentFileName).Value;
                 }
             }
             catch (Exception ex) { Device.Log.Error(ex.Message); }
+        }
+
+        bool LoadRenderedImage()
+        {
+            lock (RenderedShadows)
+            {
+                var data = RenderedShadows.FirstOrDefault(x => x.Key == CurrentFileName).Value;
+
+                if (data != null)
+                {
+                    ImageData = data;
+                    return true;
+                }
+            }
+            return false;
         }
 
         async Task<FileInfo> CreateImageFile()
@@ -131,13 +147,14 @@
                 var creationLock = CreationLocks.GetOrAdd(file.FullName, x => new AsyncLock());
 
                 using (await creationLock.LockAsync())
-                    if (!file.Exists()) await DoCreateImageFile();
+                    if (!file.Exists())
+                        await DoCreateImageFile(file);
             }
 
             return file;
         }
 
-        async Task DoCreateImageFile()
+        async Task DoCreateImageFile(FileInfo file)
         {
             var width = (int)Width.CurrentValue;
             var height = (int)Height.CurrentValue;
@@ -145,7 +162,11 @@
             var colors = await CreateMatrixColours(width, height);
 
             var imageData = await SaveAsPng(width, height, colors).DropContext();
-            await CurrentFile.WriteAllBytesAsync(imageData);
+
+            lock (RenderedShadows)
+                RenderedShadows.Add(new KeyValuePair<string, byte[]>(file.NameWithoutExtension(), imageData));
+
+            await file.WriteAllBytesAsync(imageData);
         }
 
         async Task<Color[]> CreateMatrixColours(int width, int height)

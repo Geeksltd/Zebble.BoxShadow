@@ -36,13 +36,11 @@
                 alpha[i] = imageArray[index + 3];
             });
 
-            Parallel.Invoke(() =>
-            {
-                GaussBlur(alpha, newAlpha, width, height, radius);
-                GaussBlur(red, newRed, width, height, radius);
-                GaussBlur(green, newGreen, width, height, radius);
-                GaussBlur(blue, newBlue, width, height, radius);
-            });
+            Parallel.Invoke(
+                () => GaussBlur(alpha, newAlpha, width, height, radius),
+                () => GaussBlur(red, newRed, width, height, radius),
+                () => GaussBlur(green, newGreen, width, height, radius),
+                () => GaussBlur(blue, newBlue, width, height, radius));
 
             Parallel.For(0, result.Length, Poptions, i =>
              {
