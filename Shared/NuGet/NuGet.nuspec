@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
   <metadata>
     <id>Zebble.BoxShadow</id>
-    <version>1.2.123</version>
+    <version>1.2.124</version>
     <title>BoxShadow for Zebble (Xamarin)</title>
     <projectUrl>https://github.com/Geeksltd/Zebble.BoxShadow</projectUrl>
     <iconUrl>https://raw.githubusercontent.com/Geeksltd/Zebble.BoxShadow/master/Shared/NuGet/Icon.png</iconUrl>

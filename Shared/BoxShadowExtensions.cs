@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System;
+using System.Threading.Tasks;
 
 namespace Zebble
 {
@@ -9,11 +11,6 @@ namespace Zebble
         {
             owner.WhenShown(async () =>
             {
-                if (owner.Id == null) throw new System.Exception("The owner of shadow should have unique identification");
-
-                var id = $"{owner.Id}BoxShadow";
-                if (Nav.CurrentPage.AllChildren.Any(rec => rec.Id == id)) return; // Already added
-
                 var shadow = new BoxShadow
                 {
                     For = owner,
@@ -22,11 +19,10 @@ namespace Zebble
                     XOffset = xOffset,
                     YOffset = yOffset,
                     Color = color ?? Colors.DarkGray,
-                    Id = id,
                     ZIndex = owner.ZIndex - 1
                 };
 
-                if (owner.Parent is Canvas canvas) canvas.ClipChildren = false;
+                owner.GetAllParents().OfType<Canvas>().Do(x => x.ClipChildren = false);
                 await shadow.Draw();
                 await owner.Parent.AddBefore(owner, shadow);
             });

@@ -72,41 +72,39 @@
 
         public async Task Draw()
         {
-            BindToOwner();
-            await SyncWithOwner();
-
-            Owner.Height.Changed.Handle(SyncWithOwner);
-            Owner.Width.Changed.Handle(SyncWithOwner);
-            Owner.VisibilityChanged.Handle(SyncWithOwner);
-        }
-
-        void BindToOwner()
-        {
-            Owner.VisibilityChanged.Handle(() => Visible = Owner.Visible);
-            Owner.IgnoredChanged.Handle(() => Ignored = Owner.Ignored);
-            Owner.OpacityChanged.Handle(() => Opacity = Owner.Opacity);
-            Owner.ZIndexChanged.Handle(() => ZIndex = Owner.ZIndex - 1);
+            SyncVisibilities();
 
             Height.BindTo(Owner.Height, h => h + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2);
             Width.BindTo(Owner.Width, w => w + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2);
-            Y.BindTo(Owner.Y, y => y - (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)));
-            X.BindTo(Owner.X, x => x - (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)));
-        }
+            //Y.BindTo(Owner.Y, y => y - (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)));
+            //X.BindTo(Owner.X, x => x - (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)));
 
-        public async override Task OnRendered()
-        {
             X.BindTo(Owner.X, Owner.Margin.Left, Owner.Parent.Padding.Left, (x, a, b) =>
-                Math.Max(x, a) + XOffset + b - (SHADOW_MARGIN + BlurRadius + Owner.Border.Left)
-            );
+               Math.Max(x, a) + XOffset + b - (SHADOW_MARGIN + BlurRadius + Owner.Border.Left)
+           );
 
             Y.BindTo(Owner.Y, y => y + YOffset - (SHADOW_MARGIN + BlurRadius + Owner.Border.Top));
 
-            await base.OnRendered();
+            Owner.Height.Changed.Handle(RenderImage);
+            Owner.Width.Changed.Handle(RenderImage);
+            Owner.VisibilityChanged.Handle(SyncVisibilities);
+            Owner.IgnoredChanged.Handle(SyncVisibilities);
+            Owner.OpacityChanged.Handle(SyncVisibilities);
+            Owner.ZIndexChanged.Handle(SyncVisibilities);
+
+            await RenderImage();
         }
 
-        async Task SyncWithOwner()
+        void SyncVisibilities()
         {
             Visible = Owner.Visible;
+            Ignored = Owner.Ignored;
+            Opacity = Owner.Opacity;
+            ZIndex = Owner.ZIndex - 1;
+        }
+
+        async Task RenderImage()
+        {
             try
             {
                 if (LoadRenderedImage()) return;
