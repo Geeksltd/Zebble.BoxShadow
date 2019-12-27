@@ -76,14 +76,14 @@
 
             Height.BindTo(Owner.Height, h => h + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2);
             Width.BindTo(Owner.Width, w => w + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2);
-            //Y.BindTo(Owner.Y, y => y - (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)));
-            //X.BindTo(Owner.X, x => x - (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)));
 
-            X.BindTo(Owner.X, Owner.Margin.Left, Owner.Parent.Padding.Left, (x, a, b) =>
-               Math.Max(x, a) + XOffset + b - (SHADOW_MARGIN + BlurRadius + Owner.Border.Left)
+            X.BindTo(Owner.X, Owner.Margin.Left, Owner.Parent.Padding.Left, (x, margin, containerPadding) =>
+               Math.Max(x, margin + containerPadding) + XOffset - (SHADOW_MARGIN + BlurRadius + Owner.Border.Left)
            );
 
-            Y.BindTo(Owner.Y, y => y + YOffset - (SHADOW_MARGIN + BlurRadius + Owner.Border.Top));
+            Y.BindTo(Owner.Y, Owner.Margin.Top, Owner.Parent.Padding.Top, (y, margin, containerPadding) =>
+               Math.Max(y, margin + containerPadding) + YOffset - (SHADOW_MARGIN + BlurRadius + Owner.Border.Top)
+           );
 
             Owner.Height.Changed.Handle(RenderImage);
             Owner.Width.Changed.Handle(RenderImage);
