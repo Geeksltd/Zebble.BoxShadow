@@ -24,7 +24,9 @@ namespace Zebble
 
                 owner.GetAllParents().OfType<Canvas>().Do(x => x.ClipChildren = false);
                 await shadow.Draw();
-                await owner.Parent.AddBefore(owner, shadow);
+
+                if (owner.Parent != null) await owner.Parent.AddBefore(owner, shadow);
+                else owner.ParentSet.HandleWith(() => owner.Parent.AddBefore(owner, shadow));
             });
         }
 

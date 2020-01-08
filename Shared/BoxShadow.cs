@@ -9,7 +9,7 @@
 
     public partial class BoxShadow : ImageView
     {
-        const string AlgorithmVersion = "v5";
+        const string AlgorithmVersion = "v8";
 
         const int SHADOW_MARGIN = 10, TOP_LEFT = 0, TOP_RIGHT = 1, BOTTOM_RIGHT = 2, BOTTOM_LEFT = 3;
         const double FULL_CIRCLE_DEGREE = 360.0, HALF_CIRCLE_DEGREE = 180.0;
@@ -70,12 +70,16 @@
 
         public int BlurRadius { get; set; }
 
+        float GetWidth() => Owner.ActualWidth + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2;
+
+        float GetHeight() => Owner.ActualHeight + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2;
+
         public async Task Draw()
         {
             SyncVisibilities();
 
-            Height.BindTo(Owner.Height, h => h + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2);
-            Width.BindTo(Owner.Width, w => w + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2);
+            Height.BindTo(Owner.Height, h => GetHeight());
+            Width.BindTo(Owner.Width, w => GetWidth());
 
             X.BindTo(Owner.X, Owner.Margin.Left, Owner.Parent.Padding.Left, (x, margin, containerPadding) =>
                Math.Max(x, margin + containerPadding) + XOffset - (SHADOW_MARGIN + BlurRadius + Owner.Border.Left)
@@ -105,6 +109,8 @@
 
         async Task RenderImage()
         {
+            if (Owner.ActualWidth == 0 || Owner.ActualHeight == 0) return;
+
             try
             {
                 if (LoadRenderedImage()) return;
@@ -142,11 +148,15 @@
 
             if (!file.Exists())
             {
+                Opacity = 0;
+
                 var creationLock = CreationLocks.GetOrAdd(file.FullName, x => new AsyncLock());
 
                 using (await creationLock.LockAsync())
                     if (!file.Exists())
                         await DoCreateImageFile(file);
+
+                this.Animate(100.Milliseconds(), x => x.Opacity(Owner.Opacity)).RunInParallel();
             }
 
             return file;
@@ -154,8 +164,8 @@
 
         async Task DoCreateImageFile(FileInfo file)
         {
-            var width = (int)Width.CurrentValue;
-            var height = (int)Height.CurrentValue;
+            var width = (int)GetWidth();
+            var height = (int)GetHeight();
 
             var colors = await CreateMatrixColours(width, height);
 
@@ -200,7 +210,7 @@
             }
             else await DrawRectangle(colors, width, height, borderRadius);
 
-            return GaussianBlur.Blur(colors, width, height, BlurRadius);
+            return new GaussianBlur(colors, width, height, BlurRadius.LimitMax(width / 2).LimitMax(height / 2)).Blur();
         }
 
         Rec GetCorner(int width, int height, CornerPosition corner)

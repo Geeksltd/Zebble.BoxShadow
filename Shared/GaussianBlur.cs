@@ -1,168 +1,164 @@
-﻿namespace Zebble
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace Zebble
 {
-    using System;
-    using System.Threading.Tasks;
-
-    internal static class GaussianBlur
+    internal class GaussianBlur
     {
-        const int WHITE = 255, BLACK = 0;
+        readonly int[] Alphas, Reds, Greens, Blues;
+        readonly int Width, Height, Radius;
+        readonly ParallelOptions Options = new ParallelOptions { MaxDegreeOfParallelism = 16 };
 
-        static readonly ParallelOptions Poptions = new ParallelOptions { MaxDegreeOfParallelism = 16 };
-
-        public static Color[] Blur(Color[] colors, int width, int height, int radius)
+        public GaussianBlur(Color[] colors, int width, int height, int radius)
         {
-            var bitsPerPixel = 4;
-            var imageArray = colors.ToByteArray(width, height);
+            Width = width;
+            Height = height;
+            Radius = radius;
 
-            var newRed = new byte[width * height];
-            var newGreen = new byte[width * height];
-            var newBlue = new byte[width * height];
-            var newAlpha = new byte[width * height];
-            var result = new Color[width * height];
+            Alphas = new int[colors.Length];
+            Reds = new int[colors.Length];
+            Greens = new int[colors.Length];
+            Blues = new int[colors.Length];
 
-            var arraySize = imageArray.Length / bitsPerPixel;
-            var red = new byte[arraySize];
-            var green = new byte[arraySize];
-            var blue = new byte[arraySize];
-            var alpha = new byte[arraySize];
-
-            Parallel.For(0, imageArray.Length / bitsPerPixel, Poptions, i =>
+            Parallel.For(0, colors.Length, Options, i =>
             {
-                var index = i * bitsPerPixel;
+                var color = colors[i];
 
-                red[i] = imageArray[index];
-                green[i] = imageArray[index + 1];
-                blue[i] = imageArray[index + 2];
-                alpha[i] = imageArray[index + 3];
+                Alphas[i] = color.Alpha;
+                Reds[i] = color.Red;
+                Greens[i] = color.Green;
+                Blues[i] = color.Blue;
             });
+        }
+
+        public Color[] Blur()
+        {
+            var newAlpha = new int[Width * Height];
+            var newRed = new int[Width * Height];
+            var newGreen = new int[Width * Height];
+            var newBlue = new int[Width * Height];
+            var dest = new Color[Width * Height];
 
             Parallel.Invoke(
-                () => GaussBlur(alpha, newAlpha, width, height, radius),
-                () => GaussBlur(red, newRed, width, height, radius),
-                () => GaussBlur(green, newGreen, width, height, radius),
-                () => GaussBlur(blue, newBlue, width, height, radius));
+                () => gaussBlur_4(Alphas, newAlpha),
+                () => gaussBlur_4(Reds, newRed),
+                () => gaussBlur_4(Greens, newGreen),
+                () => gaussBlur_4(Blues, newBlue));
 
-            Parallel.For(0, result.Length, Poptions, i =>
-             {
-                 if (newAlpha[i] > WHITE) newAlpha[i] = WHITE;
+            Parallel.For(0, dest.Length, Options, i =>
+            {
+                if (newAlpha[i] > 255) newAlpha[i] = 255;
+                if (newRed[i] > 255) newRed[i] = 255;
+                if (newGreen[i] > 255) newGreen[i] = 255;
+                if (newBlue[i] > 255) newBlue[i] = 255;
 
-                 if (newRed[i] > WHITE) newRed[i] = WHITE;
+                if (newAlpha[i] < 0) newAlpha[i] = 0;
+                if (newRed[i] < 0) newRed[i] = 0;
+                if (newGreen[i] < 0) newGreen[i] = 0;
+                if (newBlue[i] < 0) newBlue[i] = 0;
 
-                 if (newGreen[i] > WHITE) newGreen[i] = WHITE;
+                dest[i] = new Color((byte)newRed[i], (byte)newGreen[i], (byte)newBlue[i], (byte)newAlpha[i]);
+            });
 
-                 if (newBlue[i] > WHITE) newBlue[i] = WHITE;
-
-                 if (newAlpha[i] < BLACK) newAlpha[i] = BLACK;
-
-                 if (newRed[i] < BLACK) newRed[i] = BLACK;
-
-                 if (newGreen[i] < BLACK) newGreen[i] = BLACK;
-
-                 if (newBlue[i] < BLACK) newBlue[i] = BLACK;
-
-                 result[i] = new Color(newRed[i], newGreen[i], newBlue[i], newAlpha[i]);
-             });
-
-            return result;
+            return dest;
         }
 
-        static int[] BoxesForGauss(double sigma, int number)  // standard deviation, number of boxes
+        void gaussBlur_4(int[] source, int[] dest)
         {
-            var wIdeal = Math.Sqrt((12 * sigma * sigma / number) + 1);  // Ideal averaging filter width 
-            var wl = Math.Floor(wIdeal); if (wl % 2 == 0) wl--;
+            var bxs = boxesForGauss(Radius, 3);
+            boxBlur_4(source, dest, Width, Height, (bxs[0] - 1) / 2);
+            boxBlur_4(dest, source, Width, Height, (bxs[1] - 1) / 2);
+            boxBlur_4(source, dest, Width, Height, (bxs[2] - 1) / 2);
+        }
+
+        int[] boxesForGauss(int sigma, int n)
+        {
+            var wIdeal = Math.Sqrt((12 * sigma * sigma / n) + 1);
+            var wl = (int)Math.Floor(wIdeal);
+            if (wl % 2 == 0) wl--;
             var wu = wl + 2;
 
-            var mIdeal = (12 * sigma * sigma - number * wl * wl - 4 * number * wl - 3 * number) / (-4 * wl - 4);
-            var roundedmIdeal = Math.Round(mIdeal);
+            var mIdeal = (double)(12 * sigma * sigma - n * wl * wl - 4 * n * wl - 3 * n) / (-4 * wl - 4);
+            var m = Math.Round(mIdeal);
 
-            var sizes = new int[number];
-            for (var i = 0; i < number; i++)
-                sizes[i] = (int)(i < roundedmIdeal ? wl : wu);
-
-            return sizes;
+            var sizes = new List<int>();
+            for (var i = 0; i < n; i++) sizes.Add(i < m ? wl : wu);
+            return sizes.ToArray();
         }
 
-        static void GaussBlur(byte[] scl, byte[] tcl, int width, int height, double radius)
+        void boxBlur_4(int[] source, int[] dest, int w, int h, int r)
         {
-            var bxs = BoxesForGauss(radius, 3);
-            BoxBlur(scl, tcl, width, height, (bxs[0] - 1) / 2);
-            BoxBlur(tcl, scl, width, height, (bxs[1] - 1) / 2);
-            BoxBlur(scl, tcl, width, height, (bxs[2] - 1) / 2);
+            for (var i = 0; i < source.Length; i++) dest[i] = source[i];
+            boxBlurH_4(dest, source, w, h, r);
+            boxBlurT_4(source, dest, w, h, r);
         }
 
-        static void BoxBlur(byte[] scl, byte[] tcl, int width, int height, double radius)
+        void boxBlurH_4(int[] source, int[] dest, int w, int h, int r)
         {
-            for (var i = 0; i < scl.Length; i++) tcl[i] = scl[i];
-            BoxBlurH(tcl, scl, width, height, radius);
-            BoxBlurT(scl, tcl, width, height, radius);
-        }
-
-        static void BoxBlurH(byte[] scl, byte[] tcl, int width, int height, double radius)
-        {
-            var iarr = 1 / (radius + radius + 1);
-            for (var i = 0; i < height; i++)
+            var iar = (double)1 / (r + r + 1);
+            Parallel.For(0, h, Options, i =>
             {
-                var ti = i * width;
+                var ti = i * w;
                 var li = ti;
-                var ri = ti + (int)radius;
-                var fv = scl[ti];
-                var lv = scl[ti + width - 1];
-                var val = (radius + 1) * fv;
-                for (var j = 0; j < radius; j++)
-                    val += scl[ti + j];
-                for (var j = 0; j <= radius; j++)
+                var ri = ti + r;
+                var fv = source[ti];
+                var lv = source[ti + w - 1];
+                var val = (r + 1) * fv;
+                for (var j = 0; j < r; j++) val += source[ti + j];
+                for (var j = 0; j <= r; j++)
                 {
-                    val += scl[ri++] - fv;
-                    tcl[ti++] = Convert.ToByte(Math.Round(val * iarr));
+                    val += source[ri++] - fv;
+                    dest[ti++] = (int)Math.Round(val * iar);
                 }
-
-                for (var j = radius + 1; j < width - radius; j++)
+                for (var j = r + 1; j < w - r; j++)
                 {
-                    val += scl[ri++] - scl[li++];
-                    tcl[ti++] = Convert.ToByte(Math.Round(val * iarr));
+                    val += source[ri++] - dest[li++];
+                    dest[ti++] = (int)Math.Round(val * iar);
                 }
-
-                for (var j = width - radius; j < width; j++)
+                for (var j = w - r; j < w; j++)
                 {
-                    val += lv - scl[li++];
-                    tcl[ti++] = Convert.ToByte(Math.Round(val * iarr));
+                    val += lv - source[li++];
+                    dest[ti++] = (int)Math.Round(val * iar);
                 }
-            }
+            });
         }
 
-        static void BoxBlurT(byte[] scl, byte[] tcl, int width, int height, double radius)
+        void boxBlurT_4(int[] source, int[] dest, int w, int h, int r)
         {
-            var iarr = 1 / (radius + radius + 1);
-            for (var i = 0; i < width; i++)
+            var iar = (double)1 / (r + r + 1);
+            Parallel.For(0, w, Options, i =>
             {
                 var ti = i;
                 var li = ti;
-                var ri = ti + (int)radius * width;
-                var fv = scl[ti];
-                var lv = scl[ti + width * (height - 1)];
-                var val = (radius + 1) * fv;
-                for (var j = 0; j < radius; j++) val += scl[ti + j * width];
-                for (var j = 0; j <= radius; j++)
+                var ri = ti + r * w;
+                var fv = source[ti];
+                var lv = source[ti + w * (h - 1)];
+                var val = (r + 1) * fv;
+                for (var j = 0; j < r; j++) val += source[ti + j * w];
+                for (var j = 0; j <= r; j++)
                 {
-                    val += scl[ri] - fv;
-                    tcl[ti] = Convert.ToByte(Math.Round(val * iarr));
-                    ri += width; ti += width;
+                    val += source[ri] - fv;
+                    dest[ti] = (int)Math.Round(val * iar);
+                    ri += w;
+                    ti += w;
                 }
-
-                for (var j = radius + 1; j < height - radius; j++)
+                for (var j = r + 1; j < h - r; j++)
                 {
-                    val += scl[ri] - scl[li];
-                    tcl[ti] = Convert.ToByte(Math.Round(val * iarr));
-                    li += width; ri += width; ti += width;
+                    val += source[ri] - source[li];
+                    dest[ti] = (int)Math.Round(val * iar);
+                    li += w;
+                    ri += w;
+                    ti += w;
                 }
-
-                for (var j = height - radius; j < height; j++)
+                for (var j = h - r; j < h; j++)
                 {
-                    val += lv - scl[li];
-                    tcl[ti] = Convert.ToByte(Math.Round(val * iarr));
-                    li += width; ti += width;
+                    val += lv - source[li];
+                    dest[ti] = (int)Math.Round(val * iar);
+                    li += w;
+                    ti += w;
                 }
-            }
+            });
         }
     }
 }
