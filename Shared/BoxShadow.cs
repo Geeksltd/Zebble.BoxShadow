@@ -7,7 +7,7 @@
     using System.Linq;
     using System.Threading.Tasks;
 
-    public partial class BoxShadow : ImageView
+    public partial class BoxShadow : BoxShadowCanvas
     {
         const string AlgorithmVersion = "v8";
 
@@ -120,7 +120,7 @@
                     if (!LoadRenderedImage())
                     {
                         var target = await CreateImageFile();
-                        ImageData = target.ReadAllBytes();
+                        DrawImage(target.ReadAllBytes(), BlurRadius.LimitMax((int)GetWidth() / 2).LimitMax((int)GetHeight() / 2)).RunInParallel();
                     }
                 }
             }
@@ -135,7 +135,7 @@
 
                 if (data != null)
                 {
-                    ImageData = data;
+                    DrawImage(data, BlurRadius.LimitMax((int)GetWidth() / 2).LimitMax((int)GetHeight() / 2)).RunInParallel();
                     return true;
                 }
             }
@@ -210,7 +210,7 @@
             }
             else await DrawRectangle(colors, width, height, borderRadius);
 
-            return new GaussianBlur(colors, width, height, BlurRadius.LimitMax(width / 2).LimitMax(height / 2)).Blur();
+            return colors;
         }
 
         Rec GetCorner(int width, int height, CornerPosition corner)
