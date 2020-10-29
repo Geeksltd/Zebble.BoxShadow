@@ -19,5 +19,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)BoxShadow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BoxShadowExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BoxShadowCanvas.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BoxShadowOptions.cs" />
   </ItemGroup>
 </Project>

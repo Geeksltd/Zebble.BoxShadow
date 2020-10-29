@@ -20,7 +20,7 @@ namespace Zebble
         {
             base.OnPaintSurface(e);
 
-            View.DrawNativeImage(e);
+            View.NativeDarwAction?.Invoke(e);
         }
     }
 

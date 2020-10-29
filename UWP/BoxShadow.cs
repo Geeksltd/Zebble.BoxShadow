@@ -22,37 +22,5 @@
                 });
             });
         }
-
-        public Task<byte[]> SaveAsPng(int width, int height, Color[] colors)
-        {
-            return Thread.UI.Run(async () =>
-            {
-                var bitmap = new WriteableBitmap(width, height);
-
-                var imageArray = colors.ToByteArray(width, height);
-
-                using (var stream = bitmap.PixelBuffer.AsStream())
-                    await stream.WriteAsync(imageArray, 0, imageArray.Length);
-
-                var destFile = await ApplicationData.Current.TemporaryFolder.CreateFileAsync(Guid.NewGuid() + ".png");
-
-                using (var stream = await destFile.OpenAsync(FileAccessMode.ReadWrite))
-                {
-                    var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
-                    var pixelStream = bitmap.PixelBuffer.AsStream();
-                    var pixelsArray = new byte[pixelStream.Length];
-                    await pixelStream.ReadAsync(pixelsArray, 0, pixelsArray.Length);
-
-                    encoder.SetPixelData(BitmapPixelFormat.Rgba8, BitmapAlphaMode.Straight,
-                                (uint)bitmap.PixelWidth, (uint)bitmap.PixelHeight, 96.0, 96.0, pixelsArray);
-                    await encoder.FlushAsync();
-                }
-
-                var result = await destFile.ReadAllBytes();
-                await destFile.DeleteAsync();
-
-                return result;
-            });
-        }
     }
 }
