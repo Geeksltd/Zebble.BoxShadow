@@ -14,6 +14,9 @@ namespace Zebble
         {
             View = canvas;
             View.OnDraw.Handle(() => SetNeedsDisplay());
+
+            BackgroundColor = UIColor.Clear;
+            Opaque = false;
         }
 
         protected override void OnPaintSurface(SKPaintSurfaceEventArgs e)
