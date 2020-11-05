@@ -10,7 +10,7 @@
     public partial class BoxShadow : BoxShadowCanvas
     {
         const string AlgorithmVersion = "v8";
-        const int SHADOW_MARGIN = 8;
+        const int SHADOW_MARGIN = 11;
 
         static ConcurrentDictionary<string, AsyncLock> CreationLocks = new ConcurrentDictionary<string, AsyncLock>();
         static List<KeyValuePair<string, byte[]>> RenderedShadows = new List<KeyValuePair<string, byte[]>>();
@@ -42,7 +42,7 @@
 
                 var color = Color.ToString().TrimStart("#");
 
-                if(Options != null)
+                if (Options != null)
                 {
                     var b = Options.GetBorderString();
                     var p = Options.GetPositionString();
@@ -73,12 +73,7 @@
         public int BlurRadius
         {
             get => blurValue;
-            set
-            {
-                if (blurValue == value) return;
-
-                blurValue = value / 2;
-            }
+            set => blurValue = value / 2;
         }
 
         public BoxShadowOptions Options { get; set; }
@@ -91,9 +86,9 @@
 
         public int Expand { get; set; }
 
-        float GetWidth() => Owner.ActualWidth + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2;
+        float GetWidth() => Owner.ActualWidth + (BlurRadius + SHADOW_MARGIN + Expand) * 2;
 
-        float GetHeight() => Owner.ActualHeight + (BlurRadius + SHADOW_MARGIN + Expand.LimitMin(0)) * 2;
+        float GetHeight() => Owner.ActualHeight + (BlurRadius + SHADOW_MARGIN + Expand) * 2;
 
         int GetBlurValue() => BlurRadius.LimitMax((int)GetWidth() / 2).LimitMax((int)GetHeight() / 2);
 
@@ -105,11 +100,11 @@
             Width.BindTo(Owner.Width, w => GetWidth());
 
             X.BindTo(Owner.X, Owner.Margin.Left, Owner.Parent.Padding.Left, (x, margin, containerPadding) =>
-               Math.Max(x, margin + containerPadding) + XOffset - (SHADOW_MARGIN + BlurRadius + Owner.Border.Left)
+               Math.Max(x, margin + containerPadding) + XOffset - (SHADOW_MARGIN + BlurRadius + Owner.Border.Left) - Expand
            );
 
             Y.BindTo(Owner.Y, Owner.Margin.Top, Owner.Parent.Padding.Top, (y, margin, containerPadding) =>
-               Math.Max(y, margin + containerPadding) + YOffset - (SHADOW_MARGIN + BlurRadius + Owner.Border.Top)
+               Math.Max(y, margin + containerPadding) + YOffset - (SHADOW_MARGIN + BlurRadius + Owner.Border.Top) - Expand
            );
 
             Owner.Height.Changed.Handle(RenderImage);
