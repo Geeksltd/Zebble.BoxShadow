@@ -12,7 +12,7 @@ namespace Zebble
         public NativeBoxShadowCanvas(BoxShadowCanvas canvas) : base(UIRuntime.CurrentActivity)
         {
             View = canvas;
-            View.OnDraw.Handle(() => Invalidate());
+            View.OnDraw.HandleOn(Thread.UI, () => Invalidate());
         }
 
         protected override void OnPaintSurface(SKPaintSurfaceEventArgs e)
