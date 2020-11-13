@@ -1,4 +1,5 @@
-﻿using SkiaSharp.Views.Android;
+﻿using Android.Runtime;
+using SkiaSharp.Views.Android;
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
@@ -8,6 +9,9 @@ namespace Zebble
     internal class NativeBoxShadowCanvas : SKCanvasView
     {
         BoxShadowCanvas View;
+
+        [Preserve]
+        public NativeBoxShadowCanvas(IntPtr handle, JniHandleOwnership transfer) : base(UIRuntime.CurrentActivity) { }
 
         public NativeBoxShadowCanvas(BoxShadowCanvas canvas) : base(UIRuntime.CurrentActivity)
         {
