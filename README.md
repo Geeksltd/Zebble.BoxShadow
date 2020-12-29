@@ -1,4 +1,4 @@
-[logo]: https://raw.githubusercontent.com/Geeksltd/Zebble.BoxShadow/master/Shared/NuGet/Icon.png "Zebble.BoxShadow"
+﻿[logo]: https://raw.githubusercontent.com/Geeksltd/Zebble.BoxShadow/master/icon.png "Zebble.BoxShadow"
 
 
 ## Zebble.BoxShadow
