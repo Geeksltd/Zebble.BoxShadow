@@ -6,6 +6,7 @@
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
+    using Olive;
 
     public partial class BoxShadow : BoxShadowCanvas
     {
@@ -135,7 +136,7 @@
                 {
                     if (LoadRenderedImage()) return;
 
-                    using (await RenderSyncLock.LockAsync())
+                    using (await RenderSyncLock.Lock())
                     {
                         if (!LoadRenderedImage())
                         {
@@ -179,7 +180,7 @@
 
                 var creationLock = CreationLocks.GetOrAdd(file.FullName, x => new AsyncLock());
 
-                using (await creationLock.LockAsync())
+                using (await creationLock.Lock())
                     if (!file.Exists())
                         await DoCreateImageFile(file);
 
