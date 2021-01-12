@@ -68,7 +68,7 @@
   <ItemGroup>
     <PackageReference Include="SkiaSharp" Version="2.80.3-preview.18" />
     <PackageReference Include="SkiaSharp.Views" Version="2.80.3-preview.18" />
-    <PackageReference Include="Zebble" Version="4.5.436" />
+    <PackageReference Include="Zebble" Version="4.5.444" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Android\" />

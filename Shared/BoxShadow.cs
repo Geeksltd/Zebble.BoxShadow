@@ -66,7 +66,7 @@
             set
             {
                 if (Owner == value) return;
-                if (Owner != null) Device.Log.Error("Shadow.For cannot be changed once it's set.");
+                if (Owner != null) Log.For(this).Error(null, "Shadow.For cannot be changed once it's set.");
                 else Owner = value;
             }
         }
@@ -152,7 +152,7 @@
                     Draw(null, GetBlurValue()).RunInParallel();
                 }
             }
-            catch (Exception ex) { Device.Log.Error(ex.Message); }
+            catch (Exception ex) { Log.For(this).Error(ex); }
         }
 
         bool LoadRenderedImage()
