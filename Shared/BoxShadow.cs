@@ -66,7 +66,7 @@
             set
             {
                 if (Owner == value) return;
-                if (Owner != null) Log.For(this).Error(null, "Shadow.For cannot be changed once it's set.");
+                if (Owner != null) Log.For(this).Error( "Shadow.For cannot be changed once it's set.");
                 else Owner = value;
             }
         }

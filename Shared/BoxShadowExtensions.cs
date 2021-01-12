@@ -12,7 +12,7 @@ namespace Zebble
         {
             if (owner == null)
             {
-                Log.For(typeof(BoxShadowExtensions)).Error(null, "BoxShadow could not work without an owner!");
+                Log.For(typeof(BoxShadowExtensions)).Error("BoxShadow could not work without an owner!");
                 return;
             }
 
