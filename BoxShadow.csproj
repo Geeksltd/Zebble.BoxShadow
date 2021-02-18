@@ -6,7 +6,7 @@
     <RootNamespace>Zebble</RootNamespace>
     <PackageId>Zebble.BoxShadow</PackageId>
     <Product>$(AssemblyName) ($(TargetFramework))</Product>
-    <Version>1.2.149.0</Version>
+    <Version>1.2.151.0</Version>
     <PackOnBuild>true</PackOnBuild>
     <NeutralLanguage>en</NeutralLanguage>
     <DefineConstants>$(DefineConstants)</DefineConstants>
@@ -64,7 +64,6 @@
     <None Remove="Zebble-LicenseAgreement.txt" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="SkiaSharp" Version="2.80.3-preview.40" />
     <PackageReference Include="SkiaSharp.Views" Version="2.80.3-preview.40" />
     <PackageReference Include="Zebble" Version="4.5.487" />
   </ItemGroup>
