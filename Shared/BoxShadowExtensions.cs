@@ -33,8 +33,14 @@ namespace Zebble
                 owner.GetAllParents().OfType<Canvas>().Do(x => x.ClipChildren = false);
                 await shadow.Draw();
 
-                if (owner.Parent != null) await owner.Parent.AddBefore(owner, shadow);
-                else owner.ParentSet.HandleWith(() => owner.Parent.AddBefore(owner, shadow));
+                async Task AddToParent()
+                {
+                    if (owner.Parent.AllChildren.GetElementBefore(owner) is BoxShadow box) await box.RemoveSelf();
+                    await owner.Parent.AddBefore(owner, shadow);
+                }
+
+                if (owner.Parent != null) await AddToParent();
+                else owner.ParentSet.HandleWith(async () => await AddToParent());
             });
         }
     }
