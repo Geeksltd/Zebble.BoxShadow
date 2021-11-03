@@ -11,6 +11,7 @@
                 Thread.UI.Run(() =>
                 {
                     var native = this.Native();
+                    if (native is null) return;
                     native.IsHitTestVisible = false;
                 });
             });
