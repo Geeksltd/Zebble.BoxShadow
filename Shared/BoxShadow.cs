@@ -34,7 +34,7 @@
                 var size = $"{Owner.ActualWidth}x{Owner.ActualHeight}";
                 var shadow = $"s{XOffset},{YOffset},{BlurRadius},{Expand}";
 
-                var border = Owner.Border.Get(b => $"b{b.RadiusTopLeft},{b.RadiusTopRight},{b.RadiusBottomRight},{b.RadiusBottomLeft}");
+                var border = Owner.BorderRadius.Get(br => $"b{br.TopLeft},{br.TopRight},{br.BottomRight},{br.BottomLeft}");
 
                 var margin = Owner.Margin;
                 var padding = Owner.Parent.Padding;
@@ -209,10 +209,10 @@
 
             if (Options == null)
                 borderRadius = new float[] {
-                    Owner.Border.RadiusTopLeft,
-                    Owner.Border.RadiusTopRight,
-                    Owner.Border.RadiusBottomRight,
-                    Owner.Border.RadiusBottomLeft
+                    Owner.BorderRadius.TopLeft,
+                    Owner.BorderRadius.TopRight,
+                    Owner.BorderRadius.BottomRight,
+                    Owner.BorderRadius.BottomLeft
                 };
             else
                 borderRadius = Options.GetBorderRadius();
@@ -236,10 +236,10 @@
         {
             switch (position)
             {
-                case CornerPosition.TopLeft: return (int)Owner.Border.RadiusTopLeft;
-                case CornerPosition.TopRight: return (int)Owner.Border.RadiusTopRight;
-                case CornerPosition.BottomRight: return (int)Owner.Border.RadiusBottomRight - 1;
-                default: return (int)Owner.Border.RadiusBottomLeft;
+                case CornerPosition.TopLeft: return (int)Owner.BorderRadius.TopLeft;
+                case CornerPosition.TopRight: return (int)Owner.BorderRadius.TopRight;
+                case CornerPosition.BottomRight: return (int)Owner.BorderRadius.BottomRight - 1;
+                default: return (int)Owner.BorderRadius.BottomLeft;
             }
         }
     }

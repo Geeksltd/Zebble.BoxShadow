@@ -15,7 +15,7 @@ namespace Zebble
 
         public string GetBorderString()
         {
-            if (ShouldBorderOverride) return Owner.Border.Get(b => $"b{b.RadiusTopLeft},{b.RadiusTopRight},{b.RadiusBottomRight},{b.RadiusBottomLeft}");
+            if (ShouldBorderOverride) return Owner.BorderRadius.Get(br => $"b{br.TopLeft},{br.TopRight},{br.BottomRight},{br.BottomLeft}");
 
             return null;
         }
@@ -38,10 +38,10 @@ namespace Zebble
             if (ShouldBorderOverride)
             {
                 var borderRadius = new float[] {
-                    Owner.Border.RadiusTopLeft,
-                    Owner.Border.RadiusTopRight,
-                    Owner.Border.RadiusBottomRight,
-                    Owner.Border.RadiusBottomLeft
+                    Owner.BorderRadius.TopLeft,
+                    Owner.BorderRadius.TopRight,
+                    Owner.BorderRadius.BottomRight,
+                    Owner.BorderRadius.BottomLeft
                 };
 
                 return borderRadius;
