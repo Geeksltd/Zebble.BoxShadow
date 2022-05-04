@@ -13,12 +13,12 @@
         const string AlgorithmVersion = "v8";
         const int SHADOW_MARGIN = 11;
 
-        static ConcurrentDictionary<string, AsyncLock> CreationLocks = new ConcurrentDictionary<string, AsyncLock>();
-        static List<KeyValuePair<string, byte[]>> RenderedShadows = new List<KeyValuePair<string, byte[]>>();
+        static ConcurrentDictionary<string, AsyncLock> CreationLocks = new();
+        static List<KeyValuePair<string, byte[]>> RenderedShadows = new();
 
         View Owner;
         int blurValue;
-        AsyncLock RenderSyncLock = new AsyncLock();
+        AsyncLock RenderSyncLock = new();
 
         public BoxShadow()
         {

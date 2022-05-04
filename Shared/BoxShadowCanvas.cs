@@ -19,12 +19,12 @@ namespace Zebble
         const int TOP_LEFT = 0, TOP_RIGHT = 1, BOTTOM_RIGHT = 2, BOTTOM_LEFT = 3;
 
         internal Action<SKPaintSurfaceEventArgs> NativeDarwAction;
-        internal readonly AsyncEvent OnDraw = new AsyncEvent();
-        internal readonly AsyncEvent<byte[]> OnExportCompleted = new AsyncEvent<byte[]>();
+        internal readonly AsyncEvent OnDraw = new();
+        internal readonly AsyncEvent<byte[]> OnExportCompleted = new();
         internal byte[] ImageData;
 
         TaskCompletionSource<bool> Waiting;
-        readonly ConcurrentList<Action<SKPaintSurfaceEventArgs>> DrawActions = new ConcurrentList<Action<SKPaintSurfaceEventArgs>>();
+        readonly ConcurrentList<Action<SKPaintSurfaceEventArgs>> DrawActions = new();
         int Radius, Blur;
         float[] ShapeCorners;
 
@@ -55,7 +55,7 @@ namespace Zebble
         public Task DrawCircle(int radius)
         {
             Radius = Device.Scale.ToDevice(radius);
-            DrawActions.Add(e => DrawNativCircle(e));
+            DrawActions.Add(DrawNativCircle);
 
             return Task.CompletedTask;
         }
@@ -63,7 +63,7 @@ namespace Zebble
         public Task DrawRect(float[] radius)
         {
             ShapeCorners = radius;
-            DrawActions.Add(e => DrawNativeRect(e));
+            DrawActions.Add(DrawNativeRect);
 
             return Task.CompletedTask;
         }
@@ -175,12 +175,12 @@ namespace Zebble
 
         public override void Dispose()
         {
-            base.Dispose();
-
             DrawActions.Clear();
             NativeDarwAction = null;
             Waiting = null;
             ImageData = null;
+
+            base.Dispose();
         }
     }
 }
