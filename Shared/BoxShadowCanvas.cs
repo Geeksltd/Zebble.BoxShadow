@@ -55,7 +55,7 @@ namespace Zebble
         public Task DrawCircle(int radius)
         {
             Radius = Device.Scale.ToDevice(radius);
-            DrawActions.Add(DrawNativCircle);
+            DrawActions.Add(DrawNativeCircle);
 
             return Task.CompletedTask;
         }
@@ -93,7 +93,7 @@ namespace Zebble
             e.Surface.Canvas.DrawBitmap(bitmap, e.Info.Rect);
         }
 
-        void DrawNativCircle(SKPaintSurfaceEventArgs e)
+        void DrawNativeCircle(SKPaintSurfaceEventArgs e)
         {
             e.Surface.Canvas.Clear();
             e.Surface.Canvas.DrawCircle(e.Info.Width / 2, e.Info.Height / 2, Radius, new SKPaint
@@ -120,8 +120,8 @@ namespace Zebble
 
             if (ShapeCorners.Distinct().IsSingle())
             {
-                var signleRadius = Device.Scale.ToDevice(ShapeCorners.First());
-                e.Surface.Canvas.DrawRoundRect(rect, signleRadius, signleRadius, paint);
+                var singleRadius = Device.Scale.ToDevice(ShapeCorners.First());
+                e.Surface.Canvas.DrawRoundRect(rect, singleRadius, singleRadius, paint);
             }
             else
             {

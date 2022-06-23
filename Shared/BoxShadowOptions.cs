@@ -4,50 +4,46 @@ namespace Zebble
 {
     public class BoxShadowOptions
     {
-        bool ShouldBorderOverride, ShouldPositionOverride;
+        bool ShouldBorderOverride;
+        bool ShouldPositionOverride;
 
         public static BoxShadowOptions Override(View viewToOverride, bool border, bool position)
-        {
-            return new BoxShadowOptions { ShouldBorderOverride = border, ShouldPositionOverride = position, Owner = viewToOverride };
-        }
+            => new BoxShadowOptions
+            {
+                ShouldBorderOverride = border,
+                ShouldPositionOverride = position,
+                Owner = viewToOverride
+            };
 
         public View Owner { get; set; }
 
         public string GetBorderString()
         {
-            if (ShouldBorderOverride) return Owner.BorderRadius.Get(br => $"b{br.TopLeft},{br.TopRight},{br.BottomRight},{br.BottomLeft}");
+            if (!ShouldBorderOverride) return null;
 
-            return null;
+            return Owner.BorderRadius.Get(br => $"b{br.TopLeft},{br.TopRight},{br.BottomRight},{br.BottomLeft}");
         }
 
         public string GetPositionString()
         {
-            if (ShouldPositionOverride)
-            {
-                var margin = Owner.Margin;
-                var padding = Owner.Parent.Padding;
+            if (!ShouldPositionOverride) return null;
 
-                return $"p{margin.Top.CurrentValue},{margin.Left.CurrentValue},{padding.Top.CurrentValue},{padding.Left.CurrentValue}";
-            }
+            var margin = Owner.Margin;
+            var padding = Owner.Parent.Padding;
 
-            return null;
+            return $"p{margin.Top.CurrentValue},{margin.Left.CurrentValue},{padding.Top.CurrentValue},{padding.Left.CurrentValue}";
         }
 
         public float[] GetBorderRadius()
         {
-            if (ShouldBorderOverride)
-            {
-                var borderRadius = new float[] {
-                    Owner.BorderRadius.TopLeft,
-                    Owner.BorderRadius.TopRight,
-                    Owner.BorderRadius.BottomRight,
-                    Owner.BorderRadius.BottomLeft
-                };
+            if (!ShouldBorderOverride) return null;
 
-                return borderRadius;
-            }
-
-            return null;
+            return new float[] {
+                Owner.BorderRadius.TopLeft,
+                Owner.BorderRadius.TopRight,
+                Owner.BorderRadius.BottomRight,
+                Owner.BorderRadius.BottomLeft
+            };
         }
     }
 }

@@ -16,7 +16,7 @@ namespace Zebble
         public NativeBoxShadowCanvas(BoxShadowCanvas canvas) : base(UIRuntime.CurrentActivity)
         {
             View = canvas;
-            View.OnDraw.HandleOn(Thread.UI, () => Invalidate());
+            View.OnDraw.HandleOn(Thread.UI, Invalidate);
         }
 
         protected override void OnPaintSurface(SKPaintSurfaceEventArgs e)
@@ -38,10 +38,6 @@ namespace Zebble
             return Task.FromResult(Result);
         }
 
-        void IDisposable.Dispose()
-        {
-            Result?.Dispose();
-            Result = null;
-        }
+        void IDisposable.Dispose() => Result = null;
     }
 }

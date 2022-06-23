@@ -2,7 +2,12 @@
 {
     public class Shadow
     {
-        public static Shadow Default = new Shadow { Color = Color.Parse("#888888"), BlurRadius = 6, Expand = -(3 + 6 / 2) };
+        public static Shadow Default = new Shadow
+        {
+            Color = Color.Parse("#888888"),
+            BlurRadius = 6,
+            Expand = -(3 + 6 / 2)
+        };
 
         public Shadow() { }
 

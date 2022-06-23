@@ -7,8 +7,15 @@ namespace Zebble
 {
     public static class BoxShadowExtensions
     {
-        public static void BoxShadow(this View owner, int xOffset = 0, int yOffset = 0, int blurRadius = 7, int expand = -5,
-            Color color = null, BoxShadowOptions options = null)
+        public static void BoxShadow(
+            this View owner,
+            int xOffset = 0,
+            int yOffset = 0,
+            int blurRadius = 7,
+            int expand = -5,
+            Color color = null,
+            BoxShadowOptions options = null
+        )
         {
             if (owner == null)
             {

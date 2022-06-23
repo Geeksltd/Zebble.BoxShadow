@@ -13,7 +13,7 @@ namespace Zebble
         public NativeBoxShadowCanvas(BoxShadowCanvas canvas)
         {
             View = canvas;
-            View.OnDraw.HandleOn(Thread.UI, () => SetNeedsDisplay());
+            View.OnDraw.HandleOn(Thread.UI, SetNeedsDisplay);
 
             BackgroundColor = UIColor.Clear;
             Opaque = false;
@@ -38,10 +38,6 @@ namespace Zebble
             return Task.FromResult(Result);
         }
 
-        void IDisposable.Dispose()
-        {
-            Result?.Dispose();
-            Result = null;
-        }
+        void IDisposable.Dispose() => Result = null;
     }
 }
