@@ -100,7 +100,7 @@ namespace Zebble
             {
                 Style = SKPaintStyle.Fill,
                 StrokeWidth = 1,
-                Color = Color.Render().ToSKColor(),
+                Color = Color.ToSKColor(),
                 ImageFilter = SKImageFilter.CreateBlur(Blur, Blur)
             });
         }
@@ -112,7 +112,7 @@ namespace Zebble
             {
                 Style = SKPaintStyle.Fill,
                 StrokeWidth = 1,
-                Color = Color.Render().ToSKColor(),
+                Color = Color.ToSKColor(),
                 ImageFilter = SKImageFilter.CreateBlur(Blur, Blur)
             };
 
