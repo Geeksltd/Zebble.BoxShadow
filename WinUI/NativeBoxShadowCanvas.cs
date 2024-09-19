@@ -1,8 +1,8 @@
-﻿using SkiaSharp.Views.UWP;
+﻿using SkiaSharp.Views.Windows;
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
-using Windows.UI.Xaml;
+using Microsoft.UI.Xaml;
 
 namespace Zebble
 {
