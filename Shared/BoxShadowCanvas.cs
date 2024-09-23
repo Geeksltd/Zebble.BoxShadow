@@ -1,6 +1,6 @@
 ﻿using SkiaSharp;
-#if UWP
-using SkiaSharp.Views.UWP;
+#if WINUI
+using SkiaSharp.Views.Windows;
 #elif __IOS__
     using SkiaSharp.Views.iOS;
 #else

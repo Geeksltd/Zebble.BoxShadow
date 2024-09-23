@@ -1,12 +1,12 @@
 ﻿<Project Sdk="MSBuild.Sdk.Extras/3.0.44">
   <PropertyGroup>
     <TargetFrameworks>net8.0-android;net8.0-ios</TargetFrameworks>
-    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);uap10.0.18362</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net8.0-windows10.0.19041</TargetFrameworks>
     <AssemblyName>Zebble.BoxShadow</AssemblyName>
     <RootNamespace>Zebble</RootNamespace>
     <PackageId>Zebble.BoxShadow</PackageId>
     <Product>$(AssemblyName) ($(TargetFramework))</Product>
-    <Version>2.0.5.0</Version>
+    <Version>2.1.0.0</Version>
     <PackOnBuild>true</PackOnBuild>
     <NeutralLanguage>en</NeutralLanguage>
     <DefineConstants>$(DefineConstants)</DefineConstants>
@@ -34,8 +34,11 @@
   <PropertyGroup Condition=" '$(Configuration)'=='Release' ">
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
-  <PropertyGroup Condition=" $(TargetFramework.StartsWith('uap10.0')) ">
-    <DefineConstants>$(DefineConstants);UWP</DefineConstants>
+  <PropertyGroup Condition=" $(TargetFramework.Contains('windows')) ">
+	<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+  <PropertyGroup Condition=" $(TargetFramework.Contains('windows')) ">
+    <DefineConstants>$(DefineConstants);WINUI</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" $(TargetFramework.Contains('android')) ">
     <DefineConstants>$(DefineConstants);ANDROID</DefineConstants>
@@ -47,16 +50,16 @@
   <ItemGroup>
     <Compile Include="Shared\**\*.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" $(DefineConstants.Contains('UWP')) ">
-    <PackageReference Include="SkiaSharp.Views" Version="2.88.8" />
-    <Compile Include="UWP\**\*.cs" />
+  <ItemGroup Condition=" $(DefineConstants.Contains('WINUI')) ">
+    <PackageReference Include="SkiaSharp.Views.WinUI" Version="3.0.0-preview.4.1" />
+    <Compile Include="WinUI\**\*.cs" />
   </ItemGroup>
   <ItemGroup Condition=" $(DefineConstants.Contains('ANDROID')) ">
-    <PackageReference Include="SkiaSharp.Views" Version="3.0.0-preview.3.1" />
+    <PackageReference Include="SkiaSharp.Views" Version="3.0.0-preview.4.1" />
     <Compile Include="Android\**\*.cs" />
   </ItemGroup>
   <ItemGroup Condition=" $(DefineConstants.Contains('IOS')) ">
-    <PackageReference Include="SkiaSharp.Views" Version="3.0.0-preview.3.1" />
+    <PackageReference Include="SkiaSharp.Views" Version="3.0.0-preview.4.1" />
     <Compile Include="iOS\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -66,9 +69,9 @@
     <None Remove="Zebble-LicenseAgreement.txt" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Zebble" Version="5.0.35" />
+    <PackageReference Include="Zebble" Version="5.1.2" />
   </ItemGroup>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Running)'=='local'">
     <Exec Command="update-local-nuget-cache $(TargetDir)" />
   </Target>
 </Project>
